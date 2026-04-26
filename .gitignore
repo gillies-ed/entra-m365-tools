@@ -1,0 +1,14 @@
+# Log data — never commit real sign-in exports
+*.csv
+test_data/
+sample_logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~

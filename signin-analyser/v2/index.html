@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; object-src 'none'; base-uri 'none';">
+<title>Entra Sign-in Log Viewer v2</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
+        integrity="sha384-D/t0ZMqQW31H3az8ktEiNb39wyKnS82iFY52QPACM+IjKW3jDUhyIgh2PApRqJZs"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+        integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4"
+        crossorigin="anonymous"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
+  --text: #c9d1d9; --text2: #8b949e; --accent: #58a6ff; --green: #3fb950;
+  --red: #f85149; --orange: #d29922; --purple: #bc8cff; --cyan: #39d2c0;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.5; }
+
+/* Header */
+.header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.header h1 span { color: var(--accent); }
+.header-actions { display: flex; gap: 8px; }
+.btn { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); cursor: pointer; font-size: 12px; transition: background .15s; }
+.btn:hover { background: var(--border); }
+.btn-accent { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+.btn-accent:hover { background: #388bfd; }
+.btn-danger { border-color: var(--red); color: var(--red); }
+.btn-danger:hover { background: rgba(248,81,73,.15); }
+.btn-sm { padding: 3px 10px; font-size: 11px; }
+
+/* Users section */
+.users-section { padding: 12px 20px 4px; }
+.users-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.users-section-header-left { display: flex; align-items: center; gap: 10px; }
+.section-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text2); font-size: 12px; user-select: none; }
+.section-toggle:hover { color: var(--text); }
+
+/* Column headers above user rows */
+.users-col-headers { display: flex; align-items: center; gap: 8px; padding: 0 0 4px; margin-bottom: 2px; }
+.users-col-headers .col-user  { width: 170px; flex-shrink: 0; font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; padding-left: 26px; }
+.users-col-headers .col-type  { flex: 1; font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; text-align: center; }
+.users-col-headers .col-spacer { width: 28px; flex-shrink: 0; }
+
+/* User rows */
+.user-rows { display: flex; flex-direction: column; gap: 6px; }
+.user-row { display: flex; align-items: stretch; gap: 8px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; transition: border-color .15s; }
+.user-row:hover { border-color: #444c56; }
+
+/* Left: colour dot + username */
+.user-row-identity { display: flex; align-items: center; gap: 6px; width: 170px; flex-shrink: 0; }
+.user-colour-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.user-name-input { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 12px; padding: 4px 7px; flex: 1; min-width: 0; outline: none; transition: border-color .15s; }
+.user-name-input:focus { border-color: var(--accent); }
+.user-name-input::placeholder { color: var(--text2); }
+
+/* Three mini drop zones */
+.user-row-drops { display: flex; gap: 8px; flex: 1; }
+.mini-drop { flex: 1; border: 1.5px dashed var(--border); border-radius: 6px; padding: 6px 8px; text-align: center; cursor: pointer; position: relative; transition: all .15s; min-width: 0; }
+.mini-drop:hover, .mini-drop.dragover { border-color: var(--accent); background: rgba(88,166,255,.06); }
+.mini-drop.loaded  { border-style: solid; border-color: var(--green); background: rgba(63,185,80,.04); }
+.mini-drop.loading { border-style: solid; border-color: var(--orange); background: rgba(210,153,34,.06); }
+.mini-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.mini-drop-type { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 2px; }
+.mini-drop-status { font-size: 10px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-drop.loaded .mini-drop-status { color: var(--green); }
+.mini-drop-type-interactive    { color: var(--accent); }
+.mini-drop-type-noninteractive { color: var(--purple); }
+.mini-drop-type-application    { color: var(--orange); }
+
+/* Remove user button */
+.remove-user-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1; align-self: center; flex-shrink: 0; width: 20px; }
+.remove-user-btn:hover { color: var(--red); }
+
+/* Add user row */
+.add-user-row { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed var(--border); border-radius: 8px; padding: 8px; cursor: pointer; color: var(--text2); font-size: 12px; transition: all .15s; margin-top: 6px; }
+.add-user-row:hover { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.04); }
+
+/* Stats */
+.stats-bar { display: flex; gap: 1px; padding: 12px 20px 16px; flex-wrap: wrap; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 110px; }
+.stat-card .label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+.stat-card .value { font-size: 22px; font-weight: 700; margin-top: 2px; }
+.stat-card .sub   { font-size: 11px; color: var(--text2); }
+.stat-card.success .value { color: var(--green); }
+.stat-card.failure .value { color: var(--red); }
+.stat-card.users-stat .value { color: var(--cyan); }
+
+/* Threat Signals */
+.threat-section { padding: 0 20px 16px; }
+.section-toggle-bar { display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 10px; color: var(--text2); font-size: 12px; user-select: none; }
+.section-toggle-bar:hover { color: var(--text); }
+.threat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.threat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.threat-card h3 { font-size: 12px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.threat-badge { background: rgba(248,81,73,.15); color: var(--red); padding: 1px 7px; border-radius: 10px; font-size: 10px; }
+.threat-placeholder { color: var(--text2); font-size: 12px; text-align: center; padding: 16px 0; }
+.threat-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.threat-table th { color: var(--text2); font-weight: 500; text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.threat-table td { padding: 5px 8px; border-bottom: 1px solid rgba(48,54,61,.5); vertical-align: top; }
+.threat-table tr:last-child td { border-bottom: none; }
+.threat-table tr:hover td { background: rgba(88,166,255,.04); }
+.threat-users-list { display: flex; flex-wrap: wrap; gap: 3px; }
+
+/* Charts */
+.charts-section { padding: 0 20px 16px; }
+.charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.chart-card h3 { font-size: 12px; color: var(--text2); margin-bottom: 10px; font-weight: 500; }
+.chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 6px; }
+.chart-header h3 { margin-bottom: 0; }
+.chart-controls { display: flex; gap: 4px; }
+.chart-filter { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 3px 6px; color: var(--text); font-size: 11px; cursor: pointer; outline: none; }
+.chart-filter:focus { border-color: var(--accent); }
+.chart-card canvas { max-height: 220px; }
+
+/* Filters */
+.filters-bar { padding: 0 20px 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.filter-input { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; color: var(--text); font-size: 12px; outline: none; transition: border-color .15s; }
+.filter-input:focus { border-color: var(--accent); }
+.filter-input::placeholder { color: var(--text2); }
+select.filter-input { cursor: pointer; min-width: 130px; }
+input[type=text].filter-input  { min-width: 200px; }
+input[type=date].filter-input  { min-width: 130px; }
+.filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { background: rgba(88,166,255,.15); color: var(--accent); padding: 3px 10px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 4px; }
+.chip button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 14px; line-height: 1; }
+
+/* User badge */
+.user-badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+
+/* Table */
+.table-controls { padding: 0 20px 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.table-controls-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.table-info { color: var(--text2); font-size: 12px; }
+.pagination { display: flex; gap: 4px; align-items: center; }
+.pagination button { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.pagination button:hover:not(:disabled) { background: var(--bg3); }
+.pagination button:disabled { opacity: .4; cursor: default; }
+.pagination span { color: var(--text2); font-size: 12px; padding: 0 6px; }
+.table-wrap { padding: 0 20px 20px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th { background: var(--bg2); border: 1px solid var(--border); padding: 8px 10px; text-align: left; font-weight: 600; color: var(--text2); cursor: pointer; white-space: nowrap; user-select: none; position: sticky; top: 0; z-index: 1; }
+thead th:hover { color: var(--text); }
+thead th .sort-arrow { margin-left: 4px; font-size: 10px; }
+tbody td { border: 1px solid var(--border); padding: 6px 10px; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+tbody tr:hover { background: rgba(88,166,255,.04); }
+.badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+.badge-interactive    { background: rgba(88,166,255,.15);  color: var(--accent); }
+.badge-noninteractive { background: rgba(188,140,255,.15); color: var(--purple); }
+.badge-application    { background: rgba(210,153,34,.15);  color: var(--orange); }
+.status-success { color: var(--green); }
+.status-failure { color: var(--red); }
+.status-other   { color: var(--orange); }
+.group-header-row td { background: var(--bg3); font-weight: 600; cursor: pointer; user-select: none; color: var(--text2); }
+.group-header-row:hover td { background: var(--border); color: var(--text); }
+.group-count { color: var(--text2); font-weight: 400; margin-left: 8px; }
+.group-users-preview { margin-left: 10px; display: inline-flex; gap: 3px; vertical-align: middle; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
+.empty-state h2 { font-size: 18px; color: var(--text); margin-bottom: 8px; }
+
+.hidden { display: none !important; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1><span>Entra</span> Sign-in Log Viewer <span style="font-size:12px;color:var(--text2);font-weight:400">v2</span></h1>
+  <div class="header-actions">
+    <button class="btn btn-accent" id="exportBtn" disabled>Export Filtered CSV</button>
+    <button class="btn btn-danger" id="clearBtn" disabled>Clear All</button>
+  </div>
+</div>
+
+<!-- Users section -->
+<div class="users-section">
+  <div class="users-section-header">
+    <div class="users-section-header-left">
+      <div class="section-toggle" id="usersToggle">&#9660; Users <span id="usersToggleCount" style="color:var(--text2)">(0 loaded)</span></div>
+    </div>
+  </div>
+  <div id="usersPanel">
+    <!-- Column headers -->
+    <div class="users-col-headers">
+      <div class="col-user">Username</div>
+      <div class="col-type">Interactive</div>
+      <div class="col-type">Non-Interactive</div>
+      <div class="col-type">Application</div>
+      <div class="col-spacer"></div>
+    </div>
+    <!-- User rows injected here -->
+    <div class="user-rows" id="userRows"></div>
+    <!-- Add user -->
+    <div class="add-user-row" id="addUserRow">&#43; Add User</div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-bar">
+  <div class="stat-card users-stat"><div class="label">Loaded Users</div><div class="value" id="statLoadedUsers">0</div></div>
+  <div class="stat-card"><div class="label">Total Sign-ins</div><div class="value" id="statTotal">0</div></div>
+  <div class="stat-card success"><div class="label">Success</div><div class="value" id="statSuccess">0</div><div class="sub" id="statSuccessPct"></div></div>
+  <div class="stat-card failure"><div class="label">Failure</div><div class="value" id="statFailure">0</div><div class="sub" id="statFailurePct"></div></div>
+  <div class="stat-card"><div class="label">Unique Identities</div><div class="value" id="statUsers">0</div></div>
+  <div class="stat-card"><div class="label">Unique Apps</div><div class="value" id="statApps">0</div></div>
+  <div class="stat-card"><div class="label">Unique IPs</div><div class="value" id="statIPs">0</div></div>
+  <div class="stat-card"><div class="label">Date Range</div><div class="value" id="statDateRange" style="font-size:13px">-</div></div>
+</div>
+
+<!-- Threat Signals -->
+<div class="threat-section">
+  <div class="section-toggle-bar" id="threatToggle">&#9660; Threat Signals</div>
+  <div id="threatGrid">
+    <div class="threat-placeholder" id="threatPlaceholder">Load sign-ins for at least 2 users to enable threat analysis.</div>
+    <div class="threat-grid hidden" id="threatCards">
+      <div class="threat-card">
+        <h3>Shared IPs <span class="threat-badge" id="sharedIPsBadge">0</span></h3>
+        <div id="sharedIPsContent"><p class="threat-placeholder">No shared IPs with failures detected.</p></div>
+      </div>
+      <div class="threat-card">
+        <h3>Shared Locations <span class="threat-badge" id="sharedLocsBadge">0</span></h3>
+        <div id="sharedLocsContent"><p class="threat-placeholder">No shared locations with failures detected.</p></div>
+      </div>
+      <div class="threat-card">
+        <h3>High Failure Rate <span class="threat-badge" id="failureRateBadge">0</span></h3>
+        <div id="failureRateContent"><p class="threat-placeholder">No users with &gt;50% failure rate.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-section">
+  <div class="section-toggle-bar" id="chartsToggle">&#9660; Charts</div>
+  <div class="charts-grid" id="chartsGrid">
+    <div class="chart-card"><h3>Status Breakdown</h3><canvas id="chartStatus"></canvas></div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Sign-ins Over Time</h3>
+        <div class="chart-controls">
+          <select class="chart-filter" id="chartTimelineMode"><option value="user">By User</option><option value="type">By Type</option></select>
+          <select class="chart-filter" id="chartTimelineFilter"><option value="">All Types</option><option value="Interactive">Interactive</option><option value="Non-Interactive">Non-Interactive</option><option value="Application">Application</option></select>
+        </div>
+      </div>
+      <canvas id="chartTimeline"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Top 10 Applications</h3>
+        <div class="chart-controls">
+          <select class="chart-filter" id="chartAppsMode"><option value="total">Total</option><option value="user">By User</option></select>
+          <select class="chart-filter" id="chartAppsFilter"><option value="">All Types</option><option value="Interactive">Interactive</option><option value="Non-Interactive">Non-Interactive</option><option value="Application">Application</option></select>
+        </div>
+      </div>
+      <canvas id="chartApps"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Top 10 Locations</h3>
+        <div class="chart-controls">
+          <select class="chart-filter" id="chartLocsMode"><option value="total">Total</option><option value="user">By User</option></select>
+          <select class="chart-filter" id="chartLocationsFilter"><option value="">All Types</option><option value="Interactive">Interactive</option><option value="Non-Interactive">Non-Interactive</option><option value="Application">Application</option></select>
+        </div>
+      </div>
+      <canvas id="chartLocations"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+  <input type="text" class="filter-input" id="filterSearch" placeholder="Search all columns...">
+  <select class="filter-input" id="filterUser"><option value="">All Users</option></select>
+  <select class="filter-input" id="filterType"><option value="">All Types</option><option value="Interactive">Interactive</option><option value="Non-Interactive">Non-Interactive</option><option value="Application">Application</option></select>
+  <select class="filter-input" id="filterStatus"><option value="">All Statuses</option></select>
+  <select class="filter-input" id="filterApp"><option value="">All Applications</option></select>
+  <select class="filter-input" id="filterLocation"><option value="">All Locations</option></select>
+  <input type="date" class="filter-input" id="filterDateFrom" title="From date">
+  <input type="date" class="filter-input" id="filterDateTo" title="To date">
+  <button class="btn" id="clearFilters">Clear Filters</button>
+</div>
+<div class="filters-bar">
+  <div class="filter-chips" id="filterChips"></div>
+</div>
+
+<!-- Table Controls -->
+<div class="table-controls">
+  <div class="table-controls-left">
+    <div class="table-info" id="tableInfo">No data loaded</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">
+      Group by:
+      <select class="filter-input" id="groupBy" style="min-width:100px">
+        <option value="">None</option>
+        <option value="ip">IP Address</option>
+        <option value="location">Location</option>
+        <option value="_user">User</option>
+      </select>
+    </div>
+  </div>
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- Table -->
+<div class="table-wrap">
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th data-col="date">Date (UTC) <span class="sort-arrow"></span></th>
+        <th data-col="type">Type <span class="sort-arrow"></span></th>
+        <th data-col="_user">User <span class="sort-arrow"></span></th>
+        <th data-col="identity">Identity <span class="sort-arrow"></span></th>
+        <th data-col="username">Username <span class="sort-arrow"></span></th>
+        <th data-col="application">Application <span class="sort-arrow"></span></th>
+        <th data-col="resource">Resource <span class="sort-arrow"></span></th>
+        <th data-col="ip">IP Address <span class="sort-arrow"></span></th>
+        <th data-col="location">Location <span class="sort-arrow"></span></th>
+        <th data-col="status">Status <span class="sort-arrow"></span></th>
+        <th data-col="clientApp">Client App <span class="sort-arrow"></span></th>
+        <th data-col="browser">Browser <span class="sort-arrow"></span></th>
+        <th data-col="os">OS <span class="sort-arrow"></span></th>
+        <th data-col="errorCode">Error Code <span class="sort-arrow"></span></th>
+        <th data-col="failureReason">Failure Reason <span class="sort-arrow"></span></th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div class="empty-state" id="emptyState">
+  <h2>No data loaded</h2>
+  <p>Add users above and drop their sign-in CSV exports into the corresponding slots.</p>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ─── State ───────────────────────────────────────────────────────────────────
+  let allData = [];
+  let filteredData = [];
+  let currentPage = 1;
+  const PAGE_SIZE = 100;
+  let sortCol = 'date';
+  let sortDir = -1;
+  let charts = {};
+  let chartsVisible = true;
+  let threatVisible = true;
+  let usersPanelVisible = true;
+  let collapsedGroups = new Set();
+
+  // userRows: rowId → { username, colour, files: { interactive, noninteractive, application } }
+  // files[type]: null | { filename, count }
+  let userRowsMap = {};
+  let rowIdCounter = 0;
+
+  // ─── User colour palette ──────────────────────────────────────────────────────
+  const USER_COLOURS = [
+    '#58a6ff','#3fb950','#d29922','#bc8cff','#39d2c0',
+    '#f778ba','#ffa657','#79c0ff','#7ee787','#ff7b72',
+    '#a5d6ff','#56d364','#e3b341','#d2a8ff','#76e3ea'
+  ];
+  let colourIndex = 0;
+
+  function nextColour() { return USER_COLOURS[colourIndex++ % USER_COLOURS.length]; }
+
+  function hexToRgba(hex, alpha) {
+    const h = hex.replace('#','');
+    return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${alpha})`;
+  }
+
+  // ─── Utilities ────────────────────────────────────────────────────────────────
+  function debounce(fn, delay) {
+    let t;
+    return function(...a) { clearTimeout(t); t = setTimeout(() => fn.apply(this,a), delay); };
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function stripExt(name) { return name.replace(/\.[^.]+$/,''); }
+
+  function classifyStatus(d) {
+    const s = (d.status||'').toLowerCase();
+    const hasError = d.errorCode && d.errorCode !== '0';
+    if (s.includes('failure')||s.includes('error')||hasError) return 'failure';
+    if (s.includes('success')||s==='0'||s==='') return 'success';
+    return 'other';
+  }
+
+  function getUsername(rowId) {
+    return (userRowsMap[rowId] && userRowsMap[rowId].username) || rowId;
+  }
+
+  function getColour(rowId) {
+    return (userRowsMap[rowId] && userRowsMap[rowId].colour) || '#8b949e';
+  }
+
+  // ─── Column normalisation ─────────────────────────────────────────────────────
+  function makeUserNormalizer(type) {
+    return function(row, rowId) {
+      return {
+        date: row['Date (UTC)']||'', type,
+        _user: getUsername(rowId), _rowId: rowId,
+        identity: row['User']||'', username: row['Username']||'',
+        application: row['Application']||'', resource: row['Resource']||'',
+        ip: row['IP address']||'', location: row['Location']||'',
+        status: row['Status']||'', clientApp: row['Client app']||'',
+        browser: row['Browser']||'', os: row['Operating System']||'',
+        errorCode: '', failureReason: ''
+      };
+    };
+  }
+
+  function normalizeApplication(row, rowId) {
+    return {
+      date: row['Date (UTC)']||'', type: 'Application',
+      _user: getUsername(rowId), _rowId: rowId,
+      identity: row['Service principal name']||'', username: '',
+      application: row['Application']||'', resource: row['Resource']||'',
+      ip: row['IP address']||'', location: row['Location']||'',
+      status: row['Status']||'', clientApp: '', browser: '', os: '',
+      errorCode: row['Sign-in error code']||'', failureReason: row['Failure reason']||''
+    };
+  }
+
+  const normalizers = {
+    interactive:    makeUserNormalizer('Interactive'),
+    noninteractive: makeUserNormalizer('Non-Interactive'),
+    application:    normalizeApplication
+  };
+
+  // ─── User row management ──────────────────────────────────────────────────────
+  function addUserRow() {
+    const rowId = 'row_' + (++rowIdCounter);
+    userRowsMap[rowId] = { username: '', colour: nextColour(), files: { interactive: null, noninteractive: null, application: null } };
+    renderUserRows();
+    return rowId;
+  }
+
+  function removeUserRow(rowId) {
+    allData = allData.filter(d => d._rowId !== rowId);
+    delete userRowsMap[rowId];
+    renderUserRows();
+    onDataChanged();
+  }
+
+  function renameUser(rowId, newName) {
+    if (!userRowsMap[rowId]) return;
+    userRowsMap[rowId].username = newName;
+    // Update _user on all existing rows for this rowId
+    allData.forEach(d => { if (d._rowId === rowId) d._user = newName; });
+    onDataChanged();
+  }
+
+  function renderUserRows() {
+    const container = document.getElementById('userRows');
+    container.innerHTML = '';
+
+    Object.entries(userRowsMap).forEach(([rowId, row]) => {
+      const div = document.createElement('div');
+      div.className = 'user-row';
+      div.dataset.rowId = rowId;
+
+      // Identity (colour dot + name input)
+      const identity = document.createElement('div');
+      identity.className = 'user-row-identity';
+
+      const dot = document.createElement('span');
+      dot.className = 'user-colour-dot';
+      dot.style.background = row.colour;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'user-name-input';
+      input.placeholder = 'Username';
+      input.value = row.username;
+      input.addEventListener('input', () => renameUser(rowId, input.value.trim()));
+
+      identity.appendChild(dot);
+      identity.appendChild(input);
+
+      // Three mini drop zones
+      const drops = document.createElement('div');
+      drops.className = 'user-row-drops';
+
+      ['interactive','noninteractive','application'].forEach(type => {
+        const zone = buildMiniDrop(rowId, type, row.files[type]);
+        drops.appendChild(zone);
+      });
+
+      // Remove button
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-user-btn';
+      removeBtn.title = 'Remove user';
+      removeBtn.textContent = '\u00d7';
+      removeBtn.addEventListener('click', () => removeUserRow(rowId));
+
+      div.appendChild(identity);
+      div.appendChild(drops);
+      div.appendChild(removeBtn);
+      container.appendChild(div);
+    });
+
+    // Update toggle label
+    const count = Object.keys(userRowsMap).length;
+    document.getElementById('usersToggleCount').textContent = '(' + count + ' user' + (count !== 1 ? 's' : '') + ')';
+  }
+
+  function buildMiniDrop(rowId, type, fileInfo) {
+    const typeLabels = { interactive: 'Interactive', noninteractive: 'Non-Interactive', application: 'Application' };
+    const typeClasses = { interactive: 'mini-drop-type-interactive', noninteractive: 'mini-drop-type-noninteractive', application: 'mini-drop-type-application' };
+
+    const zone = document.createElement('div');
+    zone.className = 'mini-drop' + (fileInfo ? ' loaded' : '');
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.csv';
+
+    const typeLabel = document.createElement('div');
+    typeLabel.className = 'mini-drop-type ' + typeClasses[type];
+    typeLabel.textContent = typeLabels[type];
+
+    const statusEl = document.createElement('div');
+    statusEl.className = 'mini-drop-status';
+    statusEl.textContent = fileInfo ? fileInfo.count.toLocaleString() + ' rows' : 'Drop CSV';
+
+    zone.appendChild(fileInput);
+    zone.appendChild(typeLabel);
+    zone.appendChild(statusEl);
+
+    // Drag and drop
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0], rowId, type);
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) handleFile(fileInput.files[0], rowId, type);
+      fileInput.value = '';
+    });
+
+    return zone;
+  }
+
+  // ─── File handling ────────────────────────────────────────────────────────────
+  const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+  function handleFile(file, rowId, type) {
+    if (!userRowsMap[rowId]) return;
+    if (file.size > MAX_FILE_SIZE) { alert('File too large (max 50 MB): ' + file.name); return; }
+    const name = file.name.toLowerCase();
+    if (!name.endsWith('.csv') && file.type !== 'text/csv' && file.type !== 'application/vnd.ms-excel') {
+      alert('Please select a CSV file: ' + file.name); return;
+    }
+
+    // Show loading
+    setMiniDropLoading(rowId, type, true, file.name);
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        setMiniDropLoading(rowId, type, false);
+
+        const normalize = normalizers[type];
+        if (!normalize) return;
+
+        // Auto-fill username from CSV data if not yet set
+        if (!userRowsMap[rowId].username && results.data.length > 0) {
+          const first = results.data[0];
+          const extracted = type === 'application'
+            ? (first['Service principal name'] || '')
+            : (first['User'] || first['Username'] || '');
+          if (extracted) {
+            userRowsMap[rowId].username = extracted;
+            const inputEl = document.querySelector(`.user-row[data-row-id="${rowId}"] .user-name-input`);
+            if (inputEl) inputEl.value = extracted;
+          }
+        }
+
+        // Remove existing rows for this rowId + type combo
+        allData = allData.filter(d => !(d._rowId === rowId && d.type === typeLabel(type)));
+
+        const rows = results.data.map(r => normalize(r, rowId));
+        allData = allData.concat(rows);
+
+        userRowsMap[rowId].files[type] = { filename: file.name, count: rows.length };
+        renderUserRows();
+        onDataChanged();
+      }
+    });
+  }
+
+  function typeLabel(type) {
+    return type === 'interactive' ? 'Interactive' : type === 'noninteractive' ? 'Non-Interactive' : 'Application';
+  }
+
+  function setMiniDropLoading(rowId, type, loading, filename) {
+    // Re-render is fast enough; just rebuild the row
+    if (loading) {
+      const zones = document.querySelectorAll(`.user-row[data-row-id="${rowId}"] .mini-drop`);
+      const idx = ['interactive','noninteractive','application'].indexOf(type);
+      if (zones[idx]) {
+        zones[idx].classList.add('loading');
+        zones[idx].querySelector('.mini-drop-status').textContent = 'Loading\u2026';
+      }
+    } else {
+      renderUserRows();
+    }
+  }
+
+  // Add user button
+  document.getElementById('addUserRow').addEventListener('click', () => {
+    addUserRow();
+  });
+
+  // Users panel toggle
+  document.getElementById('usersToggle').addEventListener('click', () => {
+    usersPanelVisible = !usersPanelVisible;
+    document.getElementById('usersPanel').classList.toggle('hidden', !usersPanelVisible);
+    document.getElementById('usersToggle').firstChild.textContent = usersPanelVisible ? '\u25BC ' : '\u25BA ';
+  });
+
+  // Clear all
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    allData = [];
+    filteredData = [];
+    userRowsMap = {};
+    rowIdCounter = 0;
+    colourIndex = 0;
+    renderUserRows();
+    document.getElementById('clearBtn').disabled = true;
+    document.getElementById('exportBtn').disabled = true;
+    clearAllFilters();
+    onDataChanged();
+  });
+
+  // ─── Filtering ────────────────────────────────────────────────────────────────
+  const filterSearch   = document.getElementById('filterSearch');
+  const filterUser     = document.getElementById('filterUser');
+  const filterType     = document.getElementById('filterType');
+  const filterStatus   = document.getElementById('filterStatus');
+  const filterApp      = document.getElementById('filterApp');
+  const filterLocation = document.getElementById('filterLocation');
+  const filterDateFrom = document.getElementById('filterDateFrom');
+  const filterDateTo   = document.getElementById('filterDateTo');
+
+  const debouncedApply = debounce(() => { currentPage = 1; applyFilters(); }, 250);
+
+  [filterSearch, filterUser, filterType, filterStatus, filterApp, filterLocation, filterDateFrom, filterDateTo].forEach(el => {
+    el.addEventListener(el.tagName==='SELECT'?'change':'input', () => {
+      if (el === filterSearch) debouncedApply(); else { currentPage = 1; applyFilters(); }
+    });
+  });
+
+  document.getElementById('clearFilters').addEventListener('click', clearAllFilters);
+  document.getElementById('groupBy').addEventListener('change', () => { currentPage = 1; collapsedGroups.clear(); renderTable(); });
+
+  function clearAllFilters() {
+    [filterSearch,filterUser,filterType,filterStatus,filterApp,filterLocation,filterDateFrom,filterDateTo]
+      .forEach(el => el.value = '');
+    currentPage = 1;
+    applyFilters();
+  }
+
+  function populateFilterDropdowns() {
+    const users = [...new Set(allData.map(d => d._user).filter(Boolean))].sort();
+    rebuildSelect(filterUser,     'All Users',        users);
+    rebuildSelect(filterStatus,   'All Statuses',     [...new Set(allData.map(d=>d.status).filter(Boolean))].sort());
+    rebuildSelect(filterApp,      'All Applications', [...new Set(allData.map(d=>d.application).filter(Boolean))].sort());
+    rebuildSelect(filterLocation, 'All Locations',    [...new Set(allData.map(d=>d.location).filter(Boolean))].sort());
+  }
+
+  function rebuildSelect(sel, label, opts) {
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">${label}</option>`;
+    opts.forEach(o => { const op = document.createElement('option'); op.value = o; op.textContent = o; sel.appendChild(op); });
+    if (opts.includes(cur)) sel.value = cur;
+  }
+
+  function applyFilters() {
+    const search   = filterSearch.value.toLowerCase();
+    const user     = filterUser.value;
+    const type     = filterType.value;
+    const status   = filterStatus.value;
+    const app      = filterApp.value;
+    const loc      = filterLocation.value;
+    const dateFrom = filterDateFrom.value;
+    const dateTo   = filterDateTo.value;
+
+    filteredData = allData.filter(d => {
+      if (user   && d._user       !== user)   return false;
+      if (type   && d.type        !== type)   return false;
+      if (status && d.status      !== status) return false;
+      if (app    && d.application !== app)    return false;
+      if (loc    && d.location    !== loc)    return false;
+      if (dateFrom && d.date.substring(0,10) < dateFrom) return false;
+      if (dateTo   && d.date.substring(0,10) > dateTo)   return false;
+      if (search) {
+        const hay = Object.entries(d).filter(([k])=>!k.startsWith('_')).map(([,v])=>v).join(' ').toLowerCase();
+        if (!hay.includes(search)) return false;
+      }
+      return true;
+    });
+
+    updateFilterChips();
+    sortData();
+    renderTable();
+    updateStats();
+    updateCharts();
+    updateThreatSignals();
+  }
+
+  function updateFilterChips() {
+    const chips = document.getElementById('filterChips');
+    chips.innerHTML = '';
+    const add = (label, clr) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.appendChild(document.createTextNode(label + ' '));
+      const btn = document.createElement('button');
+      btn.textContent = '\u00d7';
+      btn.addEventListener('click', clr);
+      chip.appendChild(btn);
+      chips.appendChild(chip);
+    };
+    if (filterSearch.value)   add('Search: '   + filterSearch.value,   () => { filterSearch.value='';   currentPage=1; applyFilters(); });
+    if (filterUser.value)     add('User: '     + filterUser.value,     () => { filterUser.value='';     currentPage=1; applyFilters(); });
+    if (filterType.value)     add('Type: '     + filterType.value,     () => { filterType.value='';     currentPage=1; applyFilters(); });
+    if (filterStatus.value)   add('Status: '   + filterStatus.value,   () => { filterStatus.value='';   currentPage=1; applyFilters(); });
+    if (filterApp.value)      add('App: '      + filterApp.value,      () => { filterApp.value='';      currentPage=1; applyFilters(); });
+    if (filterLocation.value) add('Location: ' + filterLocation.value, () => { filterLocation.value=''; currentPage=1; applyFilters(); });
+    if (filterDateFrom.value) add('From: '     + filterDateFrom.value, () => { filterDateFrom.value=''; currentPage=1; applyFilters(); });
+    if (filterDateTo.value)   add('To: '       + filterDateTo.value,   () => { filterDateTo.value='';   currentPage=1; applyFilters(); });
+  }
+
+  // ─── Sorting ──────────────────────────────────────────────────────────────────
+  document.querySelectorAll('#dataTable thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
+      currentPage = 1; sortData(); renderTable(); updateSortArrows();
+    });
+  });
+
+  function sortData() {
+    filteredData.sort((a,b) => {
+      const va = a[sortCol]||'', vb = b[sortCol]||'';
+      if (sortCol==='date') return (va<vb?-1:va>vb?1:0)*sortDir;
+      return va.localeCompare(vb)*sortDir;
+    });
+  }
+
+  function updateSortArrows() {
+    document.querySelectorAll('#dataTable thead th').forEach(th => {
+      th.querySelector('.sort-arrow').textContent = th.dataset.col===sortCol ? (sortDir===1?' \u25B2':' \u25BC') : '';
+    });
+  }
+
+  // ─── Table ────────────────────────────────────────────────────────────────────
+  function renderTable() {
+    const tbody  = document.getElementById('tableBody');
+    const groupBy = document.getElementById('groupBy').value;
+    const total   = filteredData.length;
+    document.getElementById('emptyState').classList.toggle('hidden', allData.length > 0);
+    document.getElementById('dataTable').classList.toggle('hidden', allData.length === 0);
+    if (groupBy) renderGroupedTable(tbody, groupBy, total);
+    else         renderFlatTable(tbody, total);
+    updateSortArrows();
+  }
+
+  function renderFlatTable(tbody, total) {
+    const totalPages = Math.max(1, Math.ceil(total/PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage-1)*PAGE_SIZE;
+    const page  = filteredData.slice(start, start+PAGE_SIZE);
+    setTableInfo(total, start);
+    tbody.innerHTML = page.map(buildDataRow).join('');
+    renderPagination(totalPages);
+  }
+
+  function renderGroupedTable(tbody, groupBy, total) {
+    const groups = {}, order = [];
+    filteredData.forEach(d => {
+      const k = d[groupBy]||'(empty)';
+      if (!groups[k]) { groups[k]=[]; order.push(k); }
+      groups[k].push(d);
+    });
+    order.sort((a,b) => groups[b].length - groups[a].length);
+    document.getElementById('tableInfo').textContent =
+      total.toLocaleString() + ' records in ' + order.length.toLocaleString() + ' groups' +
+      (total < allData.length ? ' (filtered from ' + allData.length.toLocaleString() + ')' : '');
+
+    const totalPages = Math.max(1, Math.ceil(order.length/PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage-1)*PAGE_SIZE;
+    const pageGroups = order.slice(start, start+PAGE_SIZE);
+    const COLS = 15;
+
+    let html = '';
+    pageGroups.forEach(key => {
+      const rows = groups[key];
+      const collapsed = collapsedGroups.has(key);
+      const failures  = rows.filter(r => classifyStatus(r)==='failure').length;
+      const users = [...new Set(rows.map(r=>r._rowId).filter(Boolean))];
+      const dots = users.map(rid => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(getColour(rid))};margin-right:2px" title="${esc(getUsername(rid))}"></span>`).join('');
+
+      html += `<tr class="group-header-row" data-group-key="${esc(key)}">
+        <td colspan="${COLS}">
+          <span style="margin-right:6px;font-size:10px">${collapsed?'&#9654;':'&#9660;'}</span>
+          <strong>${esc(key)}</strong>
+          <span class="group-count">${rows.length.toLocaleString()} sign-in${rows.length!==1?'s':''}${failures>0?' &mdash; <span style="color:var(--red)">'+failures.toLocaleString()+' failure'+(failures!==1?'s':'')+'</span>':''}</span>
+          <span class="group-users-preview">${dots}</span>
+        </td></tr>`;
+      if (!collapsed) rows.forEach(d => { html += buildDataRow(d); });
+    });
+
+    tbody.innerHTML = html;
+    tbody.querySelectorAll('.group-header-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const k = row.dataset.groupKey;
+        collapsedGroups.has(k) ? collapsedGroups.delete(k) : collapsedGroups.add(k);
+        renderTable();
+      });
+    });
+    renderPagination(totalPages);
+  }
+
+  function setTableInfo(total, start) {
+    const info = document.getElementById('tableInfo');
+    if (total===0 && allData.length>0) {
+      info.textContent = 'No matching records (filtered from ' + allData.length.toLocaleString() + ' total)';
+    } else if (allData.length>0) {
+      info.textContent = 'Showing ' + (start+1).toLocaleString() + '\u2013' + Math.min(start+PAGE_SIZE,total).toLocaleString() + ' of ' + total.toLocaleString() + ' records' + (total<allData.length?' (filtered from '+allData.length.toLocaleString()+')':'');
+    } else {
+      info.textContent = 'No data loaded';
+    }
+  }
+
+  function buildDataRow(d) {
+    const typeBadge = d.type==='Interactive'?'badge-interactive':d.type==='Non-Interactive'?'badge-noninteractive':'badge-application';
+    const sc = classifyStatus(d);
+    const scClass = sc==='success'?'status-success':sc==='failure'?'status-failure':'status-other';
+    const col = getColour(d._rowId);
+    const colBg = hexToRgba(col, 0.15);
+    return `<tr>
+      <td>${esc(d.date)}</td>
+      <td><span class="badge ${typeBadge}">${esc(d.type)}</span></td>
+      <td><span class="user-badge" style="background:${colBg};color:${esc(col)}">${esc(d._user||'')}</span></td>
+      <td title="${esc(d.identity)}">${esc(d.identity)}</td>
+      <td title="${esc(d.username)}">${esc(d.username)}</td>
+      <td title="${esc(d.application)}">${esc(d.application)}</td>
+      <td title="${esc(d.resource)}">${esc(d.resource)}</td>
+      <td>${esc(d.ip)}</td>
+      <td>${esc(d.location)}</td>
+      <td class="${scClass}">${esc(d.status)}</td>
+      <td>${esc(d.clientApp)}</td>
+      <td>${esc(d.browser)}</td>
+      <td>${esc(d.os)}</td>
+      <td>${esc(d.errorCode)}</td>
+      <td title="${esc(d.failureReason)}">${esc(d.failureReason)}</td>
+    </tr>`;
+  }
+
+  function renderPagination(totalPages) {
+    const pag = document.getElementById('pagination');
+    if (totalPages<=1) { pag.innerHTML=''; return; }
+    pag.innerHTML =
+      `<button id="pgFirst" ${currentPage===1?'disabled':''}>&laquo;</button>` +
+      `<button id="pgPrev"  ${currentPage===1?'disabled':''}>&lsaquo;</button>` +
+      `<span>Page ${currentPage} of ${totalPages}</span>` +
+      `<button id="pgNext" ${currentPage===totalPages?'disabled':''}>&rsaquo;</button>` +
+      `<button id="pgLast" ${currentPage===totalPages?'disabled':''}>&raquo;</button>`;
+    document.getElementById('pgFirst').onclick = () => { currentPage=1; renderTable(); };
+    document.getElementById('pgPrev') .onclick = () => { currentPage=Math.max(1,currentPage-1); renderTable(); };
+    document.getElementById('pgNext') .onclick = () => { currentPage=Math.min(totalPages,currentPage+1); renderTable(); };
+    document.getElementById('pgLast') .onclick = () => { currentPage=totalPages; renderTable(); };
+  }
+
+  // ─── Stats ────────────────────────────────────────────────────────────────────
+  function updateStats() {
+    const data = filteredData, total = data.length;
+    const succ = data.filter(d=>classifyStatus(d)==='success').length;
+    const fail = data.filter(d=>classifyStatus(d)==='failure').length;
+
+    document.getElementById('statLoadedUsers').textContent = Object.keys(userRowsMap).length;
+    document.getElementById('statTotal').textContent   = total.toLocaleString();
+    document.getElementById('statSuccess').textContent = succ.toLocaleString();
+    document.getElementById('statSuccessPct').textContent = total?(succ/total*100).toFixed(1)+'%':'';
+    document.getElementById('statFailure').textContent = fail.toLocaleString();
+    document.getElementById('statFailurePct').textContent = total?(fail/total*100).toFixed(1)+'%':'';
+    document.getElementById('statUsers').textContent = new Set(data.map(d=>d.identity).filter(Boolean)).size.toLocaleString();
+    document.getElementById('statApps').textContent  = new Set(data.map(d=>d.application).filter(Boolean)).size.toLocaleString();
+    document.getElementById('statIPs').textContent   = new Set(data.map(d=>d.ip).filter(Boolean)).size.toLocaleString();
+
+    if (data.length>0) {
+      const dates = data.map(d=>d.date).filter(Boolean).sort();
+      document.getElementById('statDateRange').textContent = dates[0].substring(0,10)+' \u2192 '+dates[dates.length-1].substring(0,10);
+    } else {
+      document.getElementById('statDateRange').textContent = '-';
+    }
+
+    const hasData = allData.length > 0;
+    document.getElementById('clearBtn').disabled  = !hasData;
+    document.getElementById('exportBtn').disabled = !hasData;
+  }
+
+  // ─── Threat Signals ───────────────────────────────────────────────────────────
+  function updateThreatSignals() {
+    const rowCount = Object.keys(userRowsMap).length;
+    const placeholder = document.getElementById('threatPlaceholder');
+    const cards = document.getElementById('threatCards');
+
+    if (rowCount < 2) {
+      placeholder.classList.remove('hidden');
+      cards.classList.add('hidden');
+      return;
+    }
+    placeholder.classList.add('hidden');
+    cards.classList.remove('hidden');
+
+    const data = filteredData;
+
+    // Shared IPs
+    const ipMap = {};
+    data.forEach(d => {
+      if (!d.ip) return;
+      if (!ipMap[d.ip]) ipMap[d.ip] = { rowIds: new Set(), failures: 0, locs: new Set() };
+      ipMap[d.ip].rowIds.add(d._rowId);
+      if (classifyStatus(d)==='failure') ipMap[d.ip].failures++;
+      if (d.location) ipMap[d.ip].locs.add(d.location);
+    });
+    const sharedIPs = Object.entries(ipMap).filter(([,v])=>v.rowIds.size>=2&&v.failures>0).sort((a,b)=>b[1].failures-a[1].failures);
+    document.getElementById('sharedIPsBadge').textContent = sharedIPs.length;
+    const ipContainer = document.getElementById('sharedIPsContent');
+    if (!sharedIPs.length) {
+      ipContainer.innerHTML = '<p class="threat-placeholder">No shared IPs with failures detected.</p>';
+    } else {
+      let h = '<table class="threat-table"><thead><tr><th>IP</th><th>Users</th><th>Failures</th><th>Locations</th></tr></thead><tbody>';
+      sharedIPs.slice(0,20).forEach(([ip,v]) => {
+        const badges = [...v.rowIds].map(rid=>`<span class="user-badge" style="background:${hexToRgba(getColour(rid),.15)};color:${esc(getColour(rid))}">${esc(getUsername(rid))}</span>`).join(' ');
+        h += `<tr><td><code style="font-size:11px">${esc(ip)}</code></td><td><div class="threat-users-list">${badges}</div></td><td style="color:var(--red);font-weight:600">${v.failures.toLocaleString()}</td><td>${esc([...v.locs].join(', '))}</td></tr>`;
+      });
+      ipContainer.innerHTML = h + '</tbody></table>';
+    }
+
+    // Shared Locations
+    const locMap = {};
+    data.forEach(d => {
+      if (!d.location) return;
+      if (!locMap[d.location]) locMap[d.location] = { rowIds: new Set(), failures: 0 };
+      locMap[d.location].rowIds.add(d._rowId);
+      if (classifyStatus(d)==='failure') locMap[d.location].failures++;
+    });
+    const sharedLocs = Object.entries(locMap).filter(([,v])=>v.rowIds.size>=2&&v.failures>0).sort((a,b)=>b[1].failures-a[1].failures);
+    document.getElementById('sharedLocsBadge').textContent = sharedLocs.length;
+    const locContainer = document.getElementById('sharedLocsContent');
+    if (!sharedLocs.length) {
+      locContainer.innerHTML = '<p class="threat-placeholder">No shared locations with failures detected.</p>';
+    } else {
+      let h = '<table class="threat-table"><thead><tr><th>Location</th><th>Users</th><th>Failures</th></tr></thead><tbody>';
+      sharedLocs.slice(0,20).forEach(([loc,v]) => {
+        const badges = [...v.rowIds].map(rid=>`<span class="user-badge" style="background:${hexToRgba(getColour(rid),.15)};color:${esc(getColour(rid))}">${esc(getUsername(rid))}</span>`).join(' ');
+        h += `<tr><td>${esc(loc)}</td><td><div class="threat-users-list">${badges}</div></td><td style="color:var(--red);font-weight:600">${v.failures.toLocaleString()}</td></tr>`;
+      });
+      locContainer.innerHTML = h + '</tbody></table>';
+    }
+
+    // High failure rate
+    const uStats = {};
+    data.forEach(d => {
+      const rid = d._rowId;
+      if (!rid) return;
+      if (!uStats[rid]) uStats[rid] = { total:0, failures:0 };
+      uStats[rid].total++;
+      if (classifyStatus(d)==='failure') uStats[rid].failures++;
+    });
+    const highFail = Object.entries(uStats).filter(([,v])=>v.total>0&&v.failures/v.total>0.5).sort((a,b)=>(b[1].failures/b[1].total)-(a[1].failures/a[1].total));
+    document.getElementById('failureRateBadge').textContent = highFail.length;
+    const rateContainer = document.getElementById('failureRateContent');
+    if (!highFail.length) {
+      rateContainer.innerHTML = '<p class="threat-placeholder">No users with &gt;50% failure rate.</p>';
+    } else {
+      let h = '<table class="threat-table"><thead><tr><th>User</th><th>Total</th><th>Failures</th><th>Rate</th></tr></thead><tbody>';
+      highFail.forEach(([rid,v]) => {
+        const col = getColour(rid);
+        h += `<tr>
+          <td><span class="user-badge" style="background:${hexToRgba(col,.15)};color:${esc(col)}">${esc(getUsername(rid))}</span></td>
+          <td>${v.total.toLocaleString()}</td>
+          <td style="color:var(--red);font-weight:600">${v.failures.toLocaleString()}</td>
+          <td style="color:var(--red);font-weight:600">${(v.failures/v.total*100).toFixed(1)}%</td>
+        </tr>`;
+      });
+      rateContainer.innerHTML = h + '</tbody></table>';
+    }
+  }
+
+  document.getElementById('threatToggle').addEventListener('click', () => {
+    threatVisible = !threatVisible;
+    document.getElementById('threatGrid').classList.toggle('hidden', !threatVisible);
+    document.getElementById('threatToggle').innerHTML = (threatVisible?'&#9660;':'&#9654;') + ' Threat Signals';
+  });
+
+  // ─── Charts ───────────────────────────────────────────────────────────────────
+  const chartColors = ['#58a6ff','#3fb950','#f85149','#d29922','#bc8cff','#39d2c0','#f778ba','#79c0ff','#7ee787','#ffa657'];
+  const typeColors  = { 'Interactive':'#58a6ff', 'Non-Interactive':'#bc8cff', 'Application':'#d29922' };
+  Chart.defaults.color = '#8b949e';
+  Chart.defaults.borderColor = '#30363d';
+  Chart.defaults.font.size = 11;
+
+  function initCharts() {
+    charts.status = new Chart(document.getElementById('chartStatus'), {
+      type: 'doughnut',
+      data: { labels:[], datasets:[{data:[],backgroundColor:[]}] },
+      options: { responsive:true, plugins:{ legend:{ position:'right', labels:{ boxWidth:12, padding:8 } } } }
+    });
+    charts.timeline = new Chart(document.getElementById('chartTimeline'), {
+      type: 'bar',
+      data: { labels:[], datasets:[] },
+      options: { responsive:true, scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }, plugins:{ legend:{ labels:{ boxWidth:12, padding:8 } } } }
+    });
+    charts.apps = new Chart(document.getElementById('chartApps'), {
+      type: 'bar',
+      data: { labels:[], datasets:[] },
+      options: { responsive:true, indexAxis:'y', plugins:{ legend:{ display:false, labels:{ boxWidth:10, padding:6 } } }, scales:{ x:{ beginAtZero:true } } }
+    });
+    charts.locations = new Chart(document.getElementById('chartLocations'), {
+      type: 'bar',
+      data: { labels:[], datasets:[] },
+      options: { responsive:true, indexAxis:'y', plugins:{ legend:{ display:false, labels:{ boxWidth:10, padding:6 } } }, scales:{ x:{ beginAtZero:true } } }
+    });
+  }
+
+  ['chartTimelineMode','chartTimelineFilter','chartAppsMode','chartAppsFilter','chartLocsMode','chartLocationsFilter']
+    .forEach(id => document.getElementById(id).addEventListener('change', updateCharts));
+
+  function updateCharts() {
+    const data = filteredData;
+
+    // Status doughnut
+    const sCounts = {};
+    data.forEach(d => { const s=d.status||'(empty)'; sCounts[s]=(sCounts[s]||0)+1; });
+    const sLabels = Object.keys(sCounts).sort((a,b)=>sCounts[b]-sCounts[a]);
+    charts.status.data.labels = sLabels;
+    charts.status.data.datasets[0].data = sLabels.map(s=>sCounts[s]);
+    charts.status.data.datasets[0].backgroundColor = sLabels.map(s => {
+      const sl=s.toLowerCase();
+      if (sl.includes('success')||sl==='0') return '#3fb950';
+      if (sl.includes('failure')||sl.includes('error')) return '#f85149';
+      return '#d29922';
+    });
+    charts.status.update();
+
+    // Timeline — by user or by type
+    const tlMode   = document.getElementById('chartTimelineMode').value;
+    const tlFilter = document.getElementById('chartTimelineFilter').value;
+    const tlData   = tlFilter ? data.filter(d=>d.type===tlFilter) : data;
+    const dayCounts = {};
+    tlData.forEach(d => {
+      const day = d.date?d.date.substring(0,10):'Unknown';
+      const key = tlMode==='user' ? (d._rowId||'?') : d.type;
+      if (!dayCounts[day]) dayCounts[day]={};
+      dayCounts[day][key] = (dayCounts[day][key]||0)+1;
+    });
+    const days = Object.keys(dayCounts).sort();
+    const tlKeys = tlMode==='user'
+      ? [...new Set(tlData.map(d=>d._rowId).filter(Boolean))]
+      : (tlFilter?[tlFilter]:['Interactive','Non-Interactive','Application']);
+    charts.timeline.data.labels = days;
+    charts.timeline.data.datasets = tlKeys.map((k,i) => ({
+      label: tlMode==='user' ? getUsername(k) : k,
+      data: days.map(d=>(dayCounts[d]&&dayCounts[d][k])||0),
+      backgroundColor: tlMode==='user' ? getColour(k) : (typeColors[k]||chartColors[i])
+    }));
+    charts.timeline.options.plugins.legend.display = tlKeys.length>1;
+    charts.timeline.update();
+
+    // Top Apps & Locations
+    updateTopChart(charts.apps,      'application', document.getElementById('chartAppsMode').value, document.getElementById('chartAppsFilter').value, data);
+    updateTopChart(charts.locations, 'location',    document.getElementById('chartLocsMode').value,  document.getElementById('chartLocationsFilter').value, data);
+  }
+
+  function updateTopChart(chart, field, mode, typeFilter, data) {
+    const src = typeFilter ? data.filter(d=>d.type===typeFilter) : data;
+    if (mode==='user') {
+      const totals = {};
+      src.forEach(d => { if(d[field]) totals[d[field]]=(totals[d[field]]||0)+1; });
+      const top10 = Object.entries(totals).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k])=>k);
+      const rowIds = [...new Set(src.map(d=>d._rowId).filter(Boolean))];
+      chart.data.labels = top10.map(l=>l.length>30?l.substring(0,30)+'\u2026':l);
+      chart.data.datasets = rowIds.map(rid => ({
+        label: getUsername(rid),
+        data: top10.map(label=>src.filter(d=>d[field]===label&&d._rowId===rid).length),
+        backgroundColor: getColour(rid)
+      }));
+      chart.options.plugins.legend.display = rowIds.length>1;
+      chart.options.scales.x.stacked = true;
+    } else {
+      const counts = {};
+      src.forEach(d => { if(d[field]) counts[d[field]]=(counts[d[field]]||0)+1; });
+      const top = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+      chart.data.labels = top.map(([l])=>l.length>30?l.substring(0,30)+'\u2026':l);
+      chart.data.datasets = [{ data:top.map(([,c])=>c), backgroundColor:chartColors }];
+      chart.options.plugins.legend.display = false;
+      chart.options.scales.x.stacked = false;
+    }
+    chart.update();
+  }
+
+  document.getElementById('chartsToggle').addEventListener('click', () => {
+    chartsVisible = !chartsVisible;
+    document.getElementById('chartsGrid').classList.toggle('hidden', !chartsVisible);
+    document.getElementById('chartsToggle').innerHTML = (chartsVisible?'&#9660;':'&#9654;') + ' Charts';
+  });
+
+  // ─── Export ───────────────────────────────────────────────────────────────────
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    if (!filteredData.length) return;
+    const cols    = ['date','type','_user','identity','username','application','resource','ip','location','status','clientApp','browser','os','errorCode','failureReason'];
+    const headers = ['Date (UTC)','Type','User','Identity','Username','Application','Resource','IP Address','Location','Status','Client App','Browser','OS','Error Code','Failure Reason'];
+    let csv = headers.join(',') + '\r\n';
+    filteredData.forEach(d => {
+      csv += cols.map(c => {
+        let v = d[c]||'';
+        if (v.includes(',')||v.includes('"')||v.includes('\n')||v.includes('\r')) v='"'+v.replace(/"/g,'""')+'"';
+        return v;
+      }).join(',') + '\r\n';
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download = 'entra-signins-filtered.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // ─── Init ─────────────────────────────────────────────────────────────────────
+  function onDataChanged() {
+    populateFilterDropdowns();
+    applyFilters();
+  }
+
+  // Start with one empty user row ready to go
+  addUserRow();
+  initCharts();
+  renderTable();
+})();
+</script>
+</body>
+</html>

@@ -8,3 +8,4 @@ All tools run entirely in the browser — no server, no install, no data leaves 
 | Tool | Description |
 |------|-------------|
 | [Sign-in Log Analyser](signin-analyser/) | Multi-user Entra ID sign-in log viewer with threat signals and charts |
+| [Geo Location Report Viewer](geolocation-check/) | Visualise Entra sign-in locations, detect impossible travel, and generate manager reports |

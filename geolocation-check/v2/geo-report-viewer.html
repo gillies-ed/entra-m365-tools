@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geo Location Report Viewer</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.header {
+    background: #1a1a2e;
+    color: white;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.header h1 { font-size: 17px; font-weight: 600; flex: 1; }
+.record-count { font-size: 13px; color: #9ca3af; }
+
+.hdr-btn {
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.hdr-btn.primary   { background: #4f46e5; }
+.hdr-btn.primary:hover   { background: #4338ca; }
+.hdr-btn.secondary { background: #374151; }
+.hdr-btn.secondary:hover { background: #4b5563; }
+.hdr-btn.secondary.active { background: #059669; }
+.hdr-btn.get-mgr   { background: #0891b2; }
+.hdr-btn.get-mgr:hover   { background: #0e7490; }
+.hdr-btn.danger    { background: #dc2626; }
+.hdr-btn.danger:hover    { background: #b91c1c; }
+.hdr-btn:disabled  { opacity: 0.4; cursor: default; pointer-events: none; }
+
+/* Loading spinner inside button */
+.btn-spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Main layout ─────────────────────────────────────────────────────────── */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+.sidebar {
+    width: 290px;
+    background: white;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+.sidebar-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.sidebar-header h2 {
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: #9ca3af; margin-bottom: 10px;
+}
+.search-box {
+    width: 100%; padding: 8px 12px;
+    border: 1px solid #d1d5db; border-radius: 6px;
+    font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.search-box:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px #4f46e520; }
+
+.user-list { flex: 1; overflow-y: auto; }
+.user-item {
+    padding: 11px 16px; cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.12s;
+    display: flex; align-items: center; gap: 10px;
+}
+.user-item:hover { background: #f9fafb; }
+.user-item.active { background: #eef2ff; border-left: 3px solid #4f46e5; padding-left: 13px; }
+
+.user-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: #4f46e5; color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-upn  { font-size: 11px; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-count {
+    background: #4f46e5; color: white;
+    border-radius: 10px; padding: 2px 7px;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+
+/* ── Content ─────────────────────────────────────────────────────────────── */
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+
+.empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%; color: #9ca3af; gap: 10px; text-align: center;
+}
+.empty-state .icon { font-size: 44px; }
+.empty-state p { font-size: 15px; }
+.empty-state .sub { font-size: 13px; color: #d1d5db; }
+.empty-state .warn { font-size: 13px; color: #f59e0b; }
+
+/* ── User header card ────────────────────────────────────────────────────── */
+.user-header {
+    background: white; border-radius: 10px;
+    padding: 20px 24px; margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.user-header-avatar {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: #4f46e5; color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; flex-shrink: 0;
+}
+.user-header-info h2 { font-size: 18px; font-weight: 700; }
+.user-header-info .upn   { font-size: 13px; color: #6b7280; margin-top: 2px; }
+.user-header-info .range { font-size: 12px; color: #9ca3af; margin-top: 3px; }
+
+.user-stats { margin-left: auto; display: flex; gap: 24px; text-align: center; }
+.stat-value { font-size: 22px; font-weight: 700; color: #4f46e5; display: block; }
+.stat-label { font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* ── Filter legend (country + OS) ────────────────────────────────────────── */
+.filter-section { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+.filter-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.filter-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: #9ca3af; min-width: 58px; flex-shrink: 0;
+}
+.countries-legend { display: none; }
+.filter-badge {
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+    user-select: none;
+}
+.filter-badge:hover { opacity: 0.85; transform: translateY(-1px); }
+.filter-badge.dimmed { opacity: 0.35; }
+.filter-badge.all-badge {
+    background: #f3f4f6; color: #374151; border: 1px solid #d1d5db;
+}
+.filter-badge.all-badge.active-all {
+    background: #1a1a2e; color: white; border-color: #1a1a2e;
+}
+
+/* ── Timeline ────────────────────────────────────────────────────────────── */
+.day-group { margin-bottom: 28px; }
+.day-header {
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: #9ca3af; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px;
+}
+.day-header::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+
+.event-card {
+    background: white; border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    display: flex; align-items: flex-start; gap: 14px;
+    border-left: 4px solid; transition: box-shadow 0.15s;
+}
+.event-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+.event-time {
+    font-size: 13px; font-weight: 700; color: #374151;
+    white-space: nowrap; min-width: 50px; padding-top: 2px;
+    font-variant-numeric: tabular-nums;
+}
+.event-body { flex: 1; min-width: 0; }
+.location-primary { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.location-secondary { font-size: 12px; color: #6b7280; margin-top: 2px; }
+.event-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.meta-tag { background: #f3f4f6; color: #4b5563; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+.meta-tag.ip { font-family: 'Consolas', 'Courier New', monospace; }
+.interactive-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+.interactive-badge.yes { background: #d1fae5; color: #065f46; }
+.interactive-badge.no  { background: #f3f4f6; color: #9ca3af; }
+
+/* ── Narrative cards ─────────────────────────────────────────────────────── */
+.narrative-wrap { display: flex; flex-direction: column; gap: 16px; }
+.narrative-card {
+    background: white; border-radius: 10px; padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid #4f46e5;
+}
+.narrative-card.loading { border-left-color: #d1d5db; }
+.narrative-card.error   { border-left-color: #dc2626; }
+.narrative-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.narrative-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #4f46e5; color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; flex-shrink: 0;
+}
+.narrative-user { font-size: 14px; font-weight: 700; }
+.narrative-mgr  { font-size: 12px; color: #6b7280; margin-top: 1px; }
+.narrative-text { font-size: 14px; line-height: 1.7; color: #374151; }
+.narrative-loading { color: #9ca3af; font-style: italic; }
+.narrative-error   { color: #dc2626; }
+
+/* ── Impossible travel ───────────────────────────────────────────────────── */
+.travel-warning {
+    background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px;
+    padding: 10px 16px; margin-bottom: 8px;
+    display: flex; align-items: flex-start; gap: 12px;
+}
+.travel-warning-icon { font-size: 18px; flex-shrink: 0; padding-top: 1px; }
+.travel-warning-body { flex: 1; }
+.travel-warning-title { font-size: 13px; font-weight: 700; color: #991b1b; }
+.travel-warning-detail { font-size: 12px; color: #b91c1c; margin-top: 2px; }
+
+.impossible-badge {
+    background: #dc2626; color: white; border-radius: 10px;
+    padding: 1px 6px; font-size: 10px; font-weight: 700; flex-shrink: 0;
+}
+
+.travel-wrap {
+    background: white; border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden;
+}
+.travel-wrap h2 { padding: 16px 20px; font-size: 15px; font-weight: 700; border-bottom: 1px solid #e5e7eb; }
+.travel-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.travel-table th {
+    background: #fef2f2; padding: 10px 14px; text-align: left;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #991b1b; border-bottom: 1px solid #fca5a5;
+    white-space: nowrap; position: sticky; top: 0;
+}
+.travel-table td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+.travel-table tr:last-child td { border-bottom: none; }
+.travel-table tr:hover td { background: #fef9f9; }
+.travel-sev-high   { color: #dc2626; font-weight: 700; }
+.travel-sev-medium { color: #d97706; font-weight: 700; }
+
+/* ── Summary table ───────────────────────────────────────────────────────── */
+.summary-wrap {
+    background: white; border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+.summary-wrap h2 {
+    padding: 16px 20px; font-size: 15px; font-weight: 700;
+    border-bottom: 1px solid #e5e7eb;
+}
+.table-scroll { overflow-x: auto; }
+.summary-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+}
+.summary-table th {
+    background: #f9fafb; padding: 10px 14px;
+    text-align: left; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap; position: sticky; top: 0;
+}
+.summary-table th.country-th {
+    text-align: center; min-width: 64px;
+}
+.summary-table td {
+    padding: 10px 14px; border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tr:hover td { background: #f9fafb; }
+.summary-table td.user-td { font-weight: 600; white-space: nowrap; }
+.summary-table td.upn-td  { color: #9ca3af; font-size: 11px; }
+.summary-table td.range-td { white-space: nowrap; color: #4b5563; }
+.summary-table td.count-td {
+    text-align: center; font-weight: 700;
+    border-radius: 6px; cursor: pointer;
+}
+.summary-table td.count-td:hover { filter: brightness(0.88); }
+.summary-table td.empty-td { text-align: center; color: #e5e7eb; }
+
+/* ── Manager report table ────────────────────────────────────────────────── */
+.manager-wrap {
+    background: white; border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+.manager-wrap h2 {
+    padding: 16px 20px; font-size: 15px; font-weight: 700;
+    border-bottom: 1px solid #e5e7eb;
+}
+.manager-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.manager-table th {
+    background: #f9fafb; padding: 10px 14px;
+    text-align: left; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280;
+    border-bottom: 1px solid #e5e7eb; white-space: nowrap;
+    position: sticky; top: 0;
+}
+.manager-table td {
+    padding: 10px 14px; border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+.manager-table tr:last-child td { border-bottom: none; }
+.manager-table tr:hover td { background: #f9fafb; }
+.mgr-user-td {
+    font-weight: 600; white-space: nowrap;
+    cursor: pointer; color: #1a1a2e;
+}
+.mgr-user-td:hover { color: #4f46e5; text-decoration: underline; }
+.mgr-name-td  { white-space: nowrap; }
+.mgr-email-td { font-size: 12px; color: #4f46e5; white-space: nowrap; }
+.mgr-range-td { white-space: nowrap; color: #4b5563; font-size: 12px; }
+.mgr-none     { color: #9ca3af; font-style: italic; }
+
+.country-badges { display: flex; flex-wrap: wrap; gap: 4px; min-width: 120px; }
+.country-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+
+/* ── Drop overlay ────────────────────────────────────────────────────────── */
+.drop-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(79,70,229,0.12);
+    border: 4px dashed #4f46e5;
+    z-index: 1000;
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px;
+    color: #4f46e5; font-size: 20px; font-weight: 700;
+    pointer-events: none;
+}
+.drop-overlay.active { display: flex; }
+.drop-overlay .drop-icon { font-size: 52px; }
+
+/* ── Global UK filter toggle ─────────────────────────────────────────────── */
+.uk-toggle { display: flex; border-radius: 6px; overflow: hidden; border: 1px solid #374151; flex-shrink: 0; }
+.uk-toggle-btn { background: #374151; color: #9ca3af; border: none; padding: 8px 14px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.uk-toggle-btn:hover { background: #4b5563; color: white; }
+.uk-toggle-btn.active { background: #4f46e5; color: white; }
+
+/* ── Misc ────────────────────────────────────────────────────────────────── */
+.placeholder-msg { padding: 32px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
+.event-count.dim { background: #9ca3af; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>&#128205; Geo Location Report Viewer</h1>
+    <span class="record-count" id="recordCount"></span>
+    <div class="uk-toggle">
+        <button class="uk-toggle-btn active" id="toggleOutside" onclick="setUkFilter('outside')">Outside UK</button>
+        <button class="uk-toggle-btn"        id="toggleAll"     onclick="setUkFilter('all')">All Countries</button>
+    </div>
+    <button class="hdr-btn secondary" id="narrativesBtn" onclick="generateNarratives()" disabled>&#129302; Narratives</button>
+    <button class="hdr-btn danger" id="impossibleTravelBtn" onclick="showImpossibleTravelView()" style="display:none">&#9888; Impossible Travel</button>
+    <button class="hdr-btn secondary" id="summaryBtn" onclick="showSummary()" disabled>&#128202; Summary</button>
+    <button class="hdr-btn secondary" id="managerReportBtn" onclick="showManagerReport()" disabled>&#128101; Manager Report</button>
+    <button class="hdr-btn get-mgr"   id="getManagersBtn"  onclick="getLineManagers()"  disabled>&#128269; Get Line Managers</button>
+    <button class="hdr-btn primary" onclick="document.getElementById('csvInput').click()">&#128194; Load CSV</button>
+    <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="loadFile(this)">
+</div>
+
+<div class="main">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Users</h2>
+            <input type="text" class="search-box" id="searchBox"
+                   placeholder="Search name or UPN..."
+                   oninput="filterUsers(this.value)">
+        </div>
+        <div class="user-list" id="userList">
+            <div class="placeholder-msg">Load a CSV to see users</div>
+        </div>
+    </div>
+
+    <div class="content" id="content">
+        <div class="empty-state">
+            <div class="icon">&#128507;</div>
+            <p>Load a sign-in CSV to get started</p>
+            <p class="sub">Drag and drop a CSV file, or use the Load CSV button</p>
+        </div>
+    </div>
+</div>
+
+<div class="drop-overlay" id="dropOverlay">
+    <div class="drop-icon">&#128229;</div>
+    <div>Drop CSV file to load</div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let allUsers      = [];
+let filteredUsers = [];
+let selectedUpn     = null;
+let selectedCountry = null;
+let selectedOS      = null;
+let managerData     = null;   // { upn: { managerName, managerUpn } }
+let ukFilter        = 'outside'; // 'outside' | 'all'
+let currentView     = 'empty';   // 'empty' | 'timeline' | 'summary' | 'managerReport' | 'impossibleTravel'
+
+const UK_COUNTRIES = ['GB', 'United Kingdom'];
+
+// ── Impossible travel detection ───────────────────────────────────────────────
+const AIRPORT_BUFFER_H = 2;   // hours of overhead each way (check-in, security, deplaning)
+const MAX_SPEED_KMH    = 900; // approximate cruising speed
+
+const COUNTRY_CENTROIDS = {
+    'Afghanistan':[33.9,67.7],'Albania':[41.2,20.2],'Algeria':[28.0,1.7],
+    'Argentina':[-38.4,-63.6],'Australia':[-25.3,133.8],'Austria':[47.5,14.6],
+    'Belgium':[50.5,4.5],'Brazil':[-14.2,-51.9],'Canada':[56.1,-106.3],
+    'Chile':[-35.7,-71.5],'China':[35.9,104.2],'Croatia':[45.1,15.2],
+    'Czech Republic':[49.8,15.5],'Denmark':[56.3,9.5],'Egypt':[26.8,30.8],
+    'Finland':[61.9,25.7],'France':[46.2,2.2],'Germany':[51.2,10.5],
+    'Greece':[39.1,21.8],'Hungary':[47.2,19.5],'India':[20.6,79.0],
+    'Indonesia':[-0.8,113.9],'Ireland':[53.4,-8.2],'Israel':[31.0,34.9],
+    'Italy':[41.9,12.6],'Japan':[36.2,138.3],'Jordan':[30.6,36.2],
+    'Kenya':[-0.0,37.9],'Malaysia':[4.2,108.0],'Mexico':[23.6,-102.6],
+    'Morocco':[31.8,-7.1],'Netherlands':[52.1,5.3],'New Zealand':[-40.9,174.9],
+    'Nigeria':[9.1,8.7],'Norway':[60.5,8.5],'Pakistan':[30.4,69.3],
+    'Philippines':[12.9,121.8],'Poland':[51.9,19.1],'Portugal':[39.4,-8.2],
+    'Romania':[45.9,25.0],'Russia':[61.5,105.3],'Saudi Arabia':[24.0,45.1],
+    'Singapore':[1.4,103.8],'South Africa':[-30.6,22.9],'South Korea':[35.9,127.8],
+    'Spain':[40.5,-3.7],'Sweden':[60.1,18.6],'Switzerland':[46.8,8.2],
+    'Thailand':[15.9,100.9],'Turkey':[38.96,35.2],'Ukraine':[48.4,31.2],
+    'United Arab Emirates':[23.4,53.8],'United Kingdom':[54.7,-3.4],
+    'United States':[37.1,-95.7],'Vietnam':[14.1,108.3],
+    // ISO codes
+    'GB':[54.7,-3.4],'US':[37.1,-95.7],'DE':[51.2,10.5],'FR':[46.2,2.2],
+    'ES':[40.5,-3.7],'IT':[41.9,12.6],'NL':[52.1,5.3],'BE':[50.5,4.5],
+    'CH':[46.8,8.2],'AT':[47.5,14.6],'SE':[60.1,18.6],'NO':[60.5,8.5],
+    'DK':[56.3,9.5],'FI':[61.9,25.7],'PL':[51.9,19.1],'AU':[-25.3,133.8],
+    'NZ':[-40.9,174.9],'JP':[36.2,138.3],'CN':[35.9,104.2],'IN':[20.6,79.0],
+    'BR':[-14.2,-51.9],'CA':[56.1,-106.3],'RU':[61.5,105.3],'ZA':[-30.6,22.9],
+    'AE':[23.4,53.8],'SG':[1.4,103.8],'IE':[53.4,-8.2],'PT':[39.4,-8.2],
+    'GR':[39.1,21.8],'CZ':[49.8,15.5],'HU':[47.2,19.5],'HR':[45.1,15.2],
+    'TR':[38.96,35.2],'IL':[31.0,34.9],'SA':[24.0,45.1],'KE':[-0.0,37.9],
+    'NG':[9.1,8.7],'MX':[23.6,-102.6],'TH':[15.9,100.9],'MY':[4.2,108.0],
+    'PH':[12.9,121.8],'VN':[14.1,108.9],'PK':[30.4,69.3],'ID':[-0.8,113.9],
+    'KR':[35.9,127.8],'EG':[26.8,30.8],'MA':[31.8,-7.1],'UA':[48.4,31.2],
+    'CL':[-35.7,-71.5],'AR':[-38.4,-63.6],
+};
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+    const R    = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a    = Math.sin(dLat/2)**2 +
+                 Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function minTravelHours(c1, c2) {
+    const p1 = COUNTRY_CENTROIDS[c1];
+    const p2 = COUNTRY_CENTROIDS[c2];
+    if (!p1 || !p2) return null;
+    return haversineKm(p1[0], p1[1], p2[0], p2[1]) / MAX_SPEED_KMH + AIRPORT_BUFFER_H;
+}
+
+function detectImpossibleTravel(events) {
+    const flags = [];
+    const withLoc = events.filter(e => e.country && e.time);
+    for (let i = 1; i < withLoc.length; i++) {
+        const prev = withLoc[i - 1];
+        const curr = withLoc[i];
+        if (prev.country === curr.country) continue;
+        const deltaH  = (new Date(curr.time) - new Date(prev.time)) / 3600000;
+        if (deltaH < 0) continue;
+        const minH = minTravelHours(prev.country, curr.country);
+        if (minH !== null && deltaH < minH) flags.push({ from: prev, to: curr, deltaH, minH });
+    }
+    return flags;
+}
+
+function formatHours(h) {
+    if (h < 1) return Math.round(h * 60) + 'm';
+    const hrs  = Math.floor(h);
+    const mins = Math.round((h % 1) * 60);
+    return hrs + 'h' + (mins ? ' ' + mins + 'm' : '');
+}
+
+function fmtDateTime(ts) {
+    if (!ts) return '';
+    try { return new Date(ts).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }); }
+    catch(e) { return ts; }
+}
+
+function renderTravelWarning(flag) {
+    const fromFlag = countryFlag(flag.from.country);
+    const toFlag   = countryFlag(flag.to.country);
+    return `
+        <div class="travel-warning">
+            <div class="travel-warning-icon">&#9888;&#65039;</div>
+            <div class="travel-warning-body">
+                <div class="travel-warning-title">Impossible Travel Detected</div>
+                <div class="travel-warning-detail">
+                    ${fromFlag} ${esc(flag.from.country)} &rarr; ${toFlag} ${esc(flag.to.country)}
+                    &nbsp;&middot;&nbsp; ${formatHours(flag.deltaH)} between sign-ins
+                    (minimum ~${formatHours(flag.minH)} to travel)
+                </div>
+            </div>
+        </div>`;
+}
+
+const COLORS = [
+    '#4f46e5','#0891b2','#059669','#d97706','#dc2626',
+    '#7c3aed','#db2777','#ea580c','#65a30d','#0284c7',
+    '#be185d','#0e7490','#15803d','#b45309','#9333ea'
+];
+const colorMap = {};
+let colorIdx = 0;
+
+function getColor(key) {
+    if (!colorMap[key]) colorMap[key] = COLORS[colorIdx++ % COLORS.length];
+    return colorMap[key];
+}
+
+function setUkFilter(mode) {
+    ukFilter = mode;
+    document.getElementById('toggleOutside').classList.toggle('active', mode === 'outside');
+    document.getElementById('toggleAll').classList.toggle('active', mode === 'all');
+    renderUserList();
+    if (currentView === 'summary') showSummary();
+    else if (currentView === 'managerReport' && managerData) showManagerReport();
+    else if (currentView === 'impossibleTravel') showImpossibleTravelView();
+    else if (currentView === 'narratives') generateNarratives();
+}
+
+function countryFlag(code) {
+    if (!code || code.length !== 2) return '\uD83C\uDF0D';
+    try {
+        return String.fromCodePoint(
+            code.toUpperCase().charCodeAt(0) + 0x1F1A5,
+            code.toUpperCase().charCodeAt(1) + 0x1F1A5
+        );
+    } catch(e) { return '\uD83C\uDF0D'; }
+}
+
+function isUK(country) {
+    return UK_COUNTRIES.includes(country);
+}
+
+// ── CSV parser ────────────────────────────────────────────────────────────────
+function parseCSVLine(line) {
+    const out = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') {
+            if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+            else { inQ = !inQ; }
+        } else if (c === ',' && !inQ) {
+            out.push(cur.trim()); cur = '';
+        } else { cur += c; }
+    }
+    out.push(cur.trim());
+    return out;
+}
+
+function parseCSV(text) {
+    const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+    if (lines.length < 2) return [];
+    const headers = parseCSVLine(lines[0]);
+    const records = [];
+    for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const vals = parseCSVLine(lines[i]);
+        const rec  = {};
+        headers.forEach((h, idx) => { rec[h] = vals[idx] ?? ''; });
+        records.push(rec);
+    }
+    return records;
+}
+
+// ── File load ─────────────────────────────────────────────────────────────────
+function loadFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const records = parseCSV(e.target.result);
+        if (!records.length) { alert('No records found in file.'); return; }
+        processData(records);
+    };
+    reader.readAsText(file, 'UTF-8');
+    input.value = '';
+}
+
+// ── Data processing ───────────────────────────────────────────────────────────
+function processData(records) {
+    Object.keys(colorMap).forEach(k => delete colorMap[k]);
+    colorIdx = 0;
+
+    // Clear any previously fetched manager data
+    managerData  = null;
+    currentView  = 'empty';
+    document.getElementById('managerReportBtn').disabled = true;
+
+    const map = {};
+    records.forEach(r => {
+        const upn  = (r['UserPrincipalName'] || '').trim().toLowerCase();
+        const name = (r['UserDisplayName']   || '').trim() || upn;
+        if (!upn) return;
+        if (!map[upn]) map[upn] = { upn, name, events: [] };
+        map[upn].events.push({
+            time:        (r['TimeGenerated']                   || '').trim(),
+            country:     (r['LocationDetails_countryOrRegion'] || '').trim(),
+            city:        (r['LocationDetails_city']            || '').trim(),
+            state:       (r['LocationDetails_state']           || '').trim(),
+            app:         (r['AppDisplayName']                  || '').trim(),
+            os:          (r['DeviceDetail_operatingSystem']    || '').trim(),
+            client:      (r['ClientAppUsed']                   || '').trim(),
+            browser:     (r['DeviceDetail_browser']            || '').trim(),
+            ip:          (r['IPAddress']                       || '').trim(),
+            interactive: (r['IsInteractive']                   || '').trim()
+        });
+    });
+
+    allUsers = Object.values(map).sort((a,b) => a.name.localeCompare(b.name));
+    allUsers.forEach(u => {
+        u.events.sort((a,b) => new Date(a.time) - new Date(b.time));
+        u.events.forEach(e => { if (e.country && !isUK(e.country)) getColor(e.country); });
+        u.impossibleTravel = detectImpossibleTravel(u.events);
+    });
+
+    filteredUsers   = [...allUsers];
+    selectedUpn     = null;
+    selectedCountry = null;
+    selectedOS      = null;
+
+    const nonUkUsers = allUsers.filter(u => u.events.some(e => e.country && !isUK(e.country)));
+
+    document.getElementById('recordCount').textContent =
+        records.length.toLocaleString() + ' records \u00b7 ' + allUsers.length + ' users';
+    document.getElementById('summaryBtn').disabled     = false;
+    document.getElementById('narrativesBtn').disabled  = false;
+    document.getElementById('getManagersBtn').disabled = allUsers.length === 0;
+    const anyIT = allUsers.some(u => u.impossibleTravel && u.impossibleTravel.length > 0);
+    document.getElementById('impossibleTravelBtn').style.display = anyIT ? '' : 'none';
+
+    renderUserList();
+    document.getElementById('content').innerHTML = `
+        <div class="empty-state">
+            <div class="icon">&#128100;</div>
+            <p>${allUsers.length} user${allUsers.length !== 1 ? 's' : ''} loaded &mdash; ${nonUkUsers.length} with non-UK sign-ins</p>
+            <p class="sub">Select a user to view their timeline, or use Summary / Manager Report</p>
+        </div>`;
+}
+
+// ── User list ─────────────────────────────────────────────────────────────────
+function renderUserList() {
+    const el = document.getElementById('userList');
+    if (!filteredUsers.length) {
+        el.innerHTML = '<div class="placeholder-msg">No users match</div>';
+        return;
+    }
+    el.innerHTML = filteredUsers.map(u => {
+        const relevantCount = ukFilter === 'outside'
+            ? u.events.filter(e => e.country && !isUK(e.country)).length
+            : u.events.length;
+        const dimBadge = ukFilter === 'outside' && relevantCount === 0;
+        return `
+        <div class="user-item ${selectedUpn === u.upn ? 'active' : ''}" data-upn="${esc(u.upn)}">
+            <div class="user-avatar">${esc(u.name.charAt(0).toUpperCase())}</div>
+            <div class="user-info">
+                <div class="user-name">${esc(u.name)}</div>
+                <div class="user-upn">${esc(u.upn)}</div>
+            </div>
+            ${u.impossibleTravel && u.impossibleTravel.length ? '<span class="impossible-badge">&#9888;</span>' : ''}
+            <span class="event-count${dimBadge ? ' dim' : ''}">${relevantCount}</span>
+        </div>`;
+    }).join('');
+}
+
+document.getElementById('userList').addEventListener('click', e => {
+    const item = e.target.closest('.user-item');
+    if (item) selectUser(item.dataset.upn);
+});
+
+// Delegated listener for filter badges and clickable cells inside #content
+document.getElementById('content').addEventListener('click', e => {
+    // Country filter badge
+    const cBadge = e.target.closest('.filter-badge[data-country]');
+    if (cBadge) {
+        const c = cBadge.dataset.country;
+        selectedCountry = c === '' ? null : (selectedCountry === c ? null : c);
+        renderTimeline();
+        return;
+    }
+    // OS filter badge
+    const osBadge = e.target.closest('.filter-badge[data-os]');
+    if (osBadge) {
+        const os = osBadge.dataset.os;
+        selectedOS = os === '' ? null : (selectedOS === os ? null : os);
+        renderTimeline();
+        return;
+    }
+    // Summary table count cell → open filtered timeline for that user+country
+    const cell = e.target.closest('.count-td[data-upn]');
+    if (cell) {
+        selectedUpn     = cell.dataset.upn;
+        selectedCountry = cell.dataset.country;
+        selectedOS      = null;
+        renderUserList();
+        renderTimeline();
+        return;
+    }
+    // Manager report / impossible travel table user name → open their timeline
+    const mgrRow = e.target.closest('.mgr-user-td[data-upn]');
+    if (mgrRow) {
+        selectedCountry = null;
+        selectedOS      = null;
+        selectUser(mgrRow.dataset.upn);
+    }
+});
+
+function filterUsers(q) {
+    q = q.toLowerCase();
+    filteredUsers = allUsers.filter(u =>
+        u.name.toLowerCase().includes(q) || u.upn.toLowerCase().includes(q)
+    );
+    renderUserList();
+}
+
+// ── Timeline ──────────────────────────────────────────────────────────────────
+function selectUser(upn) {
+    currentView     = 'timeline';
+    selectedUpn     = upn;
+    selectedCountry = null;
+    selectedOS      = null;
+    renderUserList();
+    renderTimeline();
+}
+
+function renderTimeline() {
+    currentView = 'timeline';
+    const user = allUsers.find(u => u.upn === selectedUpn);
+    if (!user) return;
+
+    const countries = [...new Set(user.events.map(e => e.country).filter(Boolean))];
+    const osList    = [...new Set(user.events.map(e => e.os).filter(Boolean))].sort();
+
+    const visibleEvents = user.events.filter(e =>
+        (!selectedCountry || e.country === selectedCountry) &&
+        (!selectedOS      || e.os      === selectedOS)
+    );
+
+    const range = user.events.length
+        ? fmtDate(user.events[0].time) + ' \u2013 ' + fmtDate(user.events[user.events.length-1].time)
+        : '';
+
+    // Map each "from" event to its impossible travel flag for O(1) lookup
+    const travelFlagMap = new Map();
+    (user.impossibleTravel || []).forEach(f => travelFlagMap.set(f.from, f));
+
+    const countryRowHtml = [
+        `<span class="filter-badge all-badge ${!selectedCountry ? 'active-all' : ''}" data-country="">All</span>`,
+        ...countries.map(c => {
+            const col    = getColor(c) || '#9ca3af';
+            const active = selectedCountry === c;
+            const dimmed = selectedCountry && !active;
+            return `<span class="filter-badge ${dimmed ? 'dimmed' : ''}"
+                          data-country="${esc(c)}"
+                          style="background:${col}22;color:${col};border:1px solid ${active ? col : col+'55'};
+                                 ${active ? 'box-shadow:0 0 0 2px '+col+'55' : ''}">
+                        ${countryFlag(c)} ${esc(c)}
+                    </span>`;
+        })
+    ].join('');
+
+    const osRowHtml = [
+        `<span class="filter-badge all-badge ${!selectedOS ? 'active-all' : ''}" data-os="">All</span>`,
+        ...osList.map(os => {
+            const col    = getColor('os:' + os) || '#9ca3af';
+            const active = selectedOS === os;
+            const dimmed = selectedOS && !active;
+            return `<span class="filter-badge ${dimmed ? 'dimmed' : ''}"
+                          data-os="${esc(os)}"
+                          style="background:${col}22;color:${col};border:1px solid ${active ? col : col+'55'};
+                                 ${active ? 'box-shadow:0 0 0 2px '+col+'55' : ''}">
+                        &#128187; ${esc(os)}
+                    </span>`;
+        })
+    ].join('');
+
+    let timelineHtml = '';
+    if (visibleEvents.length) {
+        let lastDay = null, openGroup = false;
+        for (let i = 0; i < visibleEvents.length; i++) {
+            const e   = visibleEvents[i];
+            const day = e.time ? e.time.split('T')[0] : 'Unknown';
+            if (day !== lastDay) {
+                if (openGroup) timelineHtml += '</div>';
+                timelineHtml += `<div class="day-group"><div class="day-header">${fmtDayHeader(day)}</div>`;
+                lastDay = day; openGroup = true;
+            }
+            timelineHtml += renderCard(e);
+            if (i + 1 < visibleEvents.length) {
+                const flag = travelFlagMap.get(e);
+                if (flag && flag.to === visibleEvents[i + 1]) timelineHtml += renderTravelWarning(flag);
+            }
+        }
+        if (openGroup) timelineHtml += '</div>';
+    } else {
+        timelineHtml = '<div class="placeholder-msg">No events match the selected filter.</div>';
+    }
+
+    document.getElementById('content').innerHTML = `
+        <div class="user-header">
+            <div class="user-header-avatar">${esc(user.name.charAt(0).toUpperCase())}</div>
+            <div class="user-header-info">
+                <h2>${esc(user.name)}</h2>
+                <div class="upn">${esc(user.upn)}</div>
+                ${range ? `<div class="range">${range}</div>` : ''}
+            </div>
+            <div class="user-stats">
+                <div>
+                    <span class="stat-value">${visibleEvents.length}</span>
+                    <span class="stat-label">${selectedCountry ? 'Filtered' : 'Events'}</span>
+                </div>
+                <div>
+                    <span class="stat-value">${countries.length}</span>
+                    <span class="stat-label">Countries</span>
+                </div>
+                <div>
+                    <span class="stat-value">${new Set(visibleEvents.map(e => e.time ? e.time.split('T')[0] : '')).size}</span>
+                    <span class="stat-label">Days</span>
+                </div>
+            </div>
+        </div>
+        ${countries.length ? `
+        <div class="filter-section">
+            <div class="filter-row">
+                <span class="filter-label">Country</span>
+                ${countryRowHtml}
+            </div>
+            ${osList.length ? `
+            <div class="filter-row">
+                <span class="filter-label">OS</span>
+                ${osRowHtml}
+            </div>` : ''}
+        </div>` : ''}
+        <div class="timeline">${timelineHtml}</div>`;
+}
+
+function renderCard(e) {
+    const col   = e.country ? (getColor(e.country) || '#9ca3af') : '#9ca3af';
+    const flag  = countryFlag(e.country);
+    const loc   = [e.city, e.state, e.country].filter(Boolean).join(', ');
+    const inter = e.interactive.toUpperCase() === 'TRUE';
+
+    const tags = [
+        e.app     && `<span class="meta-tag">${esc(e.app)}</span>`,
+        e.os      && `<span class="meta-tag">${esc(e.os)}</span>`,
+        e.client  && `<span class="meta-tag">${esc(e.client)}</span>`,
+        e.browser && `<span class="meta-tag">${esc(e.browser)}</span>`,
+        e.ip      && `<span class="meta-tag ip">${esc(e.ip)}</span>`,
+        `<span class="interactive-badge ${inter ? 'yes' : 'no'}">${inter ? 'Interactive' : 'Non-interactive'}</span>`
+    ].filter(Boolean).join('');
+
+    return `
+        <div class="event-card" style="border-left-color:${col}">
+            <div class="event-time">${fmtTime(e.time)}</div>
+            <div class="event-body">
+                <div class="location-primary">${flag} <span>${esc(e.country || 'Unknown')}</span></div>
+                ${loc !== e.country ? `<div class="location-secondary">${esc(loc)}</div>` : ''}
+                ${tags ? `<div class="event-meta">${tags}</div>` : ''}
+            </div>
+        </div>`;
+}
+
+// ── Summary table ─────────────────────────────────────────────────────────────
+function showSummary() {
+    currentView     = 'summary';
+    selectedUpn     = null;
+    selectedCountry = null;
+    renderUserList();
+
+    const includeUK = ukFilter === 'all';
+
+    const allCountries = [...new Set(
+        allUsers.flatMap(u => u.events.map(e => e.country))
+                .filter(c => c && (includeUK || !isUK(c)))
+    )].sort();
+
+    const rows = allUsers.map(u => {
+        const relevant = u.events.filter(e => e.country && (includeUK || !isUK(e.country)));
+        if (!relevant.length) return null;
+
+        const first = relevant[0].time;
+        const last  = relevant[relevant.length - 1].time;
+        const range = fmtDate(first) + (first !== last ? ' \u2013 ' + fmtDate(last) : '');
+
+        const counts = {};
+        relevant.forEach(e => { counts[e.country] = (counts[e.country] || 0) + 1; });
+
+        return { user: u, range, counts };
+    }).filter(Boolean);
+
+    if (!rows.length) {
+        document.getElementById('content').innerHTML = `
+            <div class="empty-state">
+                <div class="icon">&#10003;</div>
+                <p>No sign-in events found</p>
+            </div>`;
+        return;
+    }
+
+    const countryHeaders = allCountries.map(c => {
+        const isHome = isUK(c);
+        const col    = isHome ? '#059669' : (getColor(c) || '#9ca3af');
+        return `<th class="country-th" style="color:${col}" title="${esc(c)}">${countryFlag(c)} ${esc(c)}</th>`;
+    }).join('');
+
+    const tableRows = rows.map(({ user, range, counts }) => {
+        const countryCells = allCountries.map(c => {
+            if (!counts[c]) return `<td class="empty-td">&ndash;</td>`;
+            const isHome = isUK(c);
+            const col    = isHome ? '#059669' : (getColor(c) || '#9ca3af');
+            return `<td class="count-td" data-upn="${esc(user.upn)}" data-country="${esc(c)}"
+                        style="color:${col};background:${col}18">${counts[c]}</td>`;
+        }).join('');
+        return `
+            <tr>
+                <td class="user-td">${esc(user.name)}</td>
+                <td class="upn-td">${esc(user.upn)}</td>
+                <td class="range-td">${range}</td>
+                ${countryCells}
+            </tr>`;
+    }).join('');
+
+    const title = includeUK
+        ? `All Countries \u2014 ${rows.length} user${rows.length !== 1 ? 's' : ''}`
+        : `Non-UK Access Summary \u2014 ${rows.length} user${rows.length !== 1 ? 's' : ''}`;
+
+    document.getElementById('content').innerHTML = `
+        <div class="summary-wrap">
+            <h2>${title}</h2>
+            <div class="table-scroll">
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>UPN</th>
+                            <th>Date range</th>
+                            ${countryHeaders}
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            </div>
+        </div>`;
+}
+
+// ── Get Line Managers ─────────────────────────────────────────────────────────
+async function getLineManagers() {
+    const upns = (ukFilter === 'all'
+        ? allUsers
+        : allUsers.filter(u => u.events.some(e => e.country && !isUK(e.country)))
+    ).map(u => u.upn);
+
+    if (!upns.length) return;
+
+    const btn = document.getElementById('getManagersBtn');
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="btn-spinner"></span> Fetching...';
+
+    selectedUpn = null;
+    renderUserList();
+
+    document.getElementById('content').innerHTML = `
+        <div class="empty-state">
+            <div class="icon">&#128269;</div>
+            <p>Fetching line managers from Microsoft Graph&hellip;</p>
+            <p class="sub">Check the PowerShell window &mdash; you may be prompted to sign in to Microsoft 365</p>
+        </div>`;
+
+    try {
+        const response = await fetch('/api/managers', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(upns)
+        });
+
+        const data = await response.json();
+
+        if (!data.success) throw new Error(data.error || 'Unknown error from server');
+
+        managerData = data.managers;
+        document.getElementById('managerReportBtn').disabled = false;
+        showManagerReport();
+    }
+    catch (err) {
+        const isNetworkErr = err instanceof TypeError;
+        document.getElementById('content').innerHTML = `
+            <div class="empty-state">
+                <div class="icon">&#10060;</div>
+                <p>Could not fetch manager data</p>
+                <p class="sub">${esc(err.message)}</p>
+                ${isNetworkErr ? `
+                <p class="warn">Run the PowerShell script <strong>Start-GeoLocationViewer.ps1</strong> to launch this website.<br>This will enable the Get Line Managers option.</p>
+                <p style="font-family:monospace;font-size:13px;color:#e5e7eb;margin-top:6px;background:#374151;padding:6px 12px;border-radius:4px;display:inline-block">${esc(getPs1Path())}</p>` : ''}
+            </div>`;
+    }
+    finally {
+        btn.disabled  = false;
+        btn.innerHTML = '&#128269; Get Line Managers';
+    }
+}
+
+// ── Manager report ────────────────────────────────────────────────────────────
+function showManagerReport() {
+    if (!managerData) return;
+
+    currentView = 'managerReport';
+    selectedUpn = null;
+    renderUserList();
+
+    const includeUK = ukFilter === 'all';
+
+    const rows = allUsers.map(u => {
+        const relevant = u.events.filter(e => e.country && (includeUK || !isUK(e.country)));
+        if (!relevant.length) return null;
+
+        const mgr       = managerData[u.upn] || { managerName: 'Not fetched', managerUpn: '' };
+        const countries = [...new Set(relevant.map(e => e.country).filter(Boolean))].sort();
+        const times     = relevant.map(e => e.time).filter(Boolean).sort();
+        const first     = times[0];
+        const last      = times[times.length - 1];
+        const count     = relevant.length;
+
+        return { user: u, mgr, countries, first, last, count };
+    }).filter(Boolean).sort((a, b) => a.user.name.localeCompare(b.user.name));
+
+    const tableRows = rows.map(({ user, mgr, countries, first, last, count }) => {
+        const range = first
+            ? fmtDate(first) + (first !== last ? ' \u2013 ' + fmtDate(last) : '') + ` (${count} event${count !== 1 ? 's' : ''})`
+            : '\u2014';
+
+        const badges = countries.map(c => {
+            const isHome = isUK(c);
+            const col    = isHome ? '#059669' : (getColor(c) || '#9ca3af');
+            return `<span class="country-badge" style="background:${col}22;color:${col}">${countryFlag(c)} ${esc(c)}</span>`;
+        }).join('');
+
+        const mgrName  = mgr.managerName || '\u2014';
+        const mgrEmail = mgr.managerUpn  || '';
+        const noMgr    = mgrName === 'No manager found' || mgrName === 'Not fetched';
+        const itCount  = user.impossibleTravel ? user.impossibleTravel.length : 0;
+        const itCell   = itCount
+            ? `<span style="color:#dc2626;font-weight:700;white-space:nowrap">&#9888; ${itCount} incident${itCount > 1 ? 's' : ''}</span>`
+            : `<span style="color:#9ca3af">\u2014</span>`;
+
+        return `
+            <tr>
+                <td class="mgr-user-td" data-upn="${esc(user.upn)}">${esc(user.name)}</td>
+                <td class="mgr-name-td  ${noMgr ? 'mgr-none' : ''}">${esc(mgrName)}</td>
+                <td class="mgr-email-td ${noMgr ? 'mgr-none' : ''}">${mgrEmail ? esc(mgrEmail) : '\u2014'}</td>
+                <td class="mgr-range-td">${range}</td>
+                <td>${itCell}</td>
+                <td><div class="country-badges">${badges}</div></td>
+            </tr>`;
+    }).join('');
+
+    document.getElementById('content').innerHTML = `
+        <div class="manager-wrap">
+            <h2>&#128101; Manager Report — ${rows.length} user${rows.length !== 1 ? 's' : ''}${includeUK ? '' : ' with non-UK sign-ins'}</h2>
+            <div class="table-scroll">
+                <table class="manager-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Manager</th>
+                            <th>Manager Email</th>
+                            <th>${includeUK ? 'Date Range' : 'Time Out of UK'}</th>
+                            <th>Flags</th>
+                            <th>Countries</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            </div>
+        </div>`;
+}
+
+// ── Narratives ────────────────────────────────────────────────────────────────
+async function generateNarratives() {
+    currentView = 'narratives';
+    selectedUpn = null;
+    renderUserList();
+
+    const includeUK    = ukFilter === 'all';
+    const flaggedUsers = allUsers.filter(u =>
+        u.events.some(e => e.country && (includeUK || !isUK(e.country)))
+    );
+
+    if (!flaggedUsers.length) {
+        document.getElementById('content').innerHTML = `
+            <div class="empty-state"><div class="icon">&#10003;</div><p>No flagged users</p></div>`;
+        return;
+    }
+
+    const cardId = u => 'nc-' + u.upn.replace(/[@.]/g, '_');
+
+    document.getElementById('content').innerHTML = `
+        <div class="narrative-wrap">${flaggedUsers.map(u => `
+            <div class="narrative-card loading" id="${cardId(u)}">
+                <div class="narrative-header">
+                    <div class="narrative-avatar">${esc(u.name.charAt(0).toUpperCase())}</div>
+                    <div>
+                        <div class="narrative-user">${esc(u.name)}</div>
+                        ${managerData && managerData[u.upn] && managerData[u.upn].managerName !== 'No manager found'
+                            ? `<div class="narrative-mgr">Manager: ${esc(managerData[u.upn].managerName)}</div>` : ''}
+                    </div>
+                    ${u.impossibleTravel && u.impossibleTravel.length
+                        ? '<span class="impossible-badge">&#9888; Impossible Travel</span>' : ''}
+                </div>
+                <div class="narrative-text narrative-loading">Generating&hellip;</div>
+            </div>`).join('')}
+        </div>`;
+
+    const btn = document.getElementById('narrativesBtn');
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="btn-spinner"></span> Generating&hellip;';
+
+    for (const user of flaggedUsers) {
+        const card = document.getElementById(cardId(user));
+        if (!card) continue;
+
+        const relevantEvents = user.events.filter(e => e.country && (includeUK || !isUK(e.country)));
+        const itData = (user.impossibleTravel || []).map(f => ({
+            fromTime: f.from.time, fromCountry: f.from.country, fromCity: f.from.city,
+            toTime:   f.to.time,   toCountry:   f.to.country,   toCity:   f.to.city,
+            deltaH: f.deltaH, minH: f.minH
+        }));
+
+        const payload = {
+            name:   user.name,
+            upn:    user.upn,
+            events: relevantEvents.map(e => ({ time: e.time, country: e.country, city: e.city, state: e.state, app: e.app })),
+            impossibleTravel: itData,
+            managerName: managerData && managerData[user.upn] ? managerData[user.upn].managerName : ''
+        };
+
+        const textEl = card.querySelector('.narrative-text');
+        try {
+            const resp = await fetch('/api/llm-summary', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error || 'Unknown error');
+            card.classList.remove('loading');
+            textEl.classList.remove('narrative-loading');
+            textEl.textContent = data.narrative;
+        }
+        catch (err) {
+            card.classList.remove('loading');
+            card.classList.add('error');
+            textEl.classList.remove('narrative-loading');
+            textEl.classList.add('narrative-error');
+            textEl.textContent = 'Error: ' + err.message;
+        }
+    }
+
+    btn.disabled  = false;
+    btn.innerHTML = '&#129302; Narratives';
+}
+
+// ── Impossible travel view ────────────────────────────────────────────────────
+function showImpossibleTravelView() {
+    currentView = 'impossibleTravel';
+    selectedUpn = null;
+    renderUserList();
+
+    const incidents = [];
+    allUsers.forEach(u => {
+        (u.impossibleTravel || []).forEach(f => incidents.push({ user: u, flag: f }));
+    });
+
+    if (!incidents.length) {
+        document.getElementById('content').innerHTML = `
+            <div class="empty-state">
+                <div class="icon">&#10003;</div>
+                <p>No impossible travel detected</p>
+            </div>`;
+        return;
+    }
+
+    const rows = incidents.map(({ user, flag }) => {
+        const sev = flag.deltaH < flag.minH * 0.4 ? 'high' : 'medium';
+        const fromLoc = [flag.from.city, flag.from.country].filter(Boolean).join(', ');
+        const toLoc   = [flag.to.city,   flag.to.country  ].filter(Boolean).join(', ');
+        return `
+            <tr>
+                <td class="mgr-user-td" data-upn="${esc(user.upn)}">${esc(user.name)}</td>
+                <td style="white-space:nowrap;color:#4b5563">${fmtDateTime(flag.from.time)}</td>
+                <td>${countryFlag(flag.from.country)} ${esc(fromLoc)}</td>
+                <td style="white-space:nowrap;color:#4b5563">${fmtDateTime(flag.to.time)}</td>
+                <td>${countryFlag(flag.to.country)} ${esc(toLoc)}</td>
+                <td class="travel-sev-${sev}">${formatHours(flag.deltaH)}</td>
+                <td style="color:#6b7280">~${formatHours(flag.minH)}</td>
+            </tr>`;
+    }).join('');
+
+    document.getElementById('content').innerHTML = `
+        <div class="travel-wrap">
+            <h2>&#9888;&#65039; Impossible Travel &mdash; ${incidents.length} incident${incidents.length !== 1 ? 's' : ''}</h2>
+            <div class="table-scroll">
+                <table class="travel-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Sign-in 1</th>
+                            <th>From</th>
+                            <th>Sign-in 2</th>
+                            <th>To</th>
+                            <th>Time Gap</th>
+                            <th>Min Travel</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        </div>`;
+}
+
+// ── Drag and drop ─────────────────────────────────────────────────────────────
+let dragCounter = 0;
+
+document.addEventListener('dragenter', e => {
+    if ([...e.dataTransfer.types].includes('Files')) {
+        dragCounter++;
+        document.getElementById('dropOverlay').classList.add('active');
+    }
+});
+document.addEventListener('dragleave', () => {
+    if (--dragCounter <= 0) {
+        dragCounter = 0;
+        document.getElementById('dropOverlay').classList.remove('active');
+    }
+});
+document.addEventListener('dragover', e => { e.preventDefault(); });
+document.addEventListener('drop', e => {
+    e.preventDefault();
+    dragCounter = 0;
+    document.getElementById('dropOverlay').classList.remove('active');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.csv')) { alert('Please drop a CSV file.'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+        const records = parseCSV(ev.target.result);
+        if (!records.length) { alert('No records found in file.'); return; }
+        processData(records);
+    };
+    reader.readAsText(file, 'UTF-8');
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function getPs1Path() {
+    if (window.location.protocol !== 'file:') return '';
+    try {
+        // Decode the file:// URL to a Windows path and swap the filename
+        const dir = decodeURIComponent(window.location.pathname)
+            .replace(/\/[^/]+$/, '')   // remove filename
+            .replace(/^\//, '')        // remove leading slash on Windows paths
+            .replace(/\//g, '\\');     // forward slash → backslash
+        return dir + '\\Start-GeoLocationViewer.ps1';
+    } catch(e) { return 'Start-GeoLocationViewer.ps1'; }
+}
+
+function esc(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(ts) {
+    if (!ts) return '';
+    try { return new Date(ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+    catch(e) { return ts.split('T')[0]; }
+}
+function fmtTime(ts) {
+    if (!ts) return '';
+    try { return new Date(ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+    catch(e) { return ''; }
+}
+function fmtDayHeader(day) {
+    try {
+        return new Date(day + 'T12:00:00').toLocaleDateString('en-GB',{
+            weekday:'long', day:'numeric', month:'long', year:'numeric'
+        });
+    } catch(e) { return day; }
+}
+</script>
+</body>
+</html>

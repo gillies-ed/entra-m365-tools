@@ -1,5 +1,6 @@
 # Log data — never commit real sign-in exports
 *.csv
+!geolocation-check/test-data/*.csv
 test_data/
 sample_logs/
 

@@ -1,0 +1,82 @@
+TimeGenerated,UserPrincipalName,UserDisplayName,LocationDetails_countryOrRegion,LocationDetails_city,LocationDetails_state,AppDisplayName,DeviceDetail_operatingSystem,ClientAppUsed,DeviceDetail_browser,IPAddress,IsInteractive
+2026-05-30T09:15:00Z,pattiF@<enter_your_domain_here>.onmicrosoft.com,Patti Fernandez,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Edge 124.0,82.24.15.100,True
+2026-06-02T08:45:00Z,pattiF@<enter_your_domain_here>.onmicrosoft.com,Patti Fernandez,United Kingdom,London,England,SharePoint Online,Windows,Browser,Edge 124.0,82.24.15.100,True
+2026-06-04T10:30:00Z,pattiF@<enter_your_domain_here>.onmicrosoft.com,Patti Fernandez,United Kingdom,London,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,82.24.15.100,False
+2026-06-05T09:00:00Z,pattiF@<enter_your_domain_here>.onmicrosoft.com,Patti Fernandez,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Edge 124.0,82.24.15.100,True
+2026-05-31T08:30:00Z,meganB@<enter_your_domain_here>.onmicrosoft.com,Megan Bowen,United Kingdom,Manchester,England,Microsoft Teams,Windows,Browser,Chrome 124.0,86.7.44.201,True
+2026-06-02T09:15:00Z,meganB@<enter_your_domain_here>.onmicrosoft.com,Megan Bowen,United Kingdom,Manchester,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,86.7.44.201,False
+2026-06-03T14:20:00Z,meganB@<enter_your_domain_here>.onmicrosoft.com,Megan Bowen,United Kingdom,Manchester,England,SharePoint Online,MacOS,Browser,Safari 17.0,86.7.44.201,True
+2026-06-05T08:55:00Z,meganB@<enter_your_domain_here>.onmicrosoft.com,Megan Bowen,United Kingdom,Manchester,England,Microsoft Teams,Windows,Browser,Chrome 124.0,86.7.44.201,True
+2026-05-30T10:00:00Z,miriamG@<enter_your_domain_here>.onmicrosoft.com,Miriam Graham,United Kingdom,Birmingham,England,Microsoft Teams,Windows,Browser,Edge 124.0,81.128.72.55,True
+2026-06-01T09:30:00Z,miriamG@<enter_your_domain_here>.onmicrosoft.com,Miriam Graham,United Kingdom,Birmingham,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,81.128.72.55,False
+2026-06-03T13:45:00Z,miriamG@<enter_your_domain_here>.onmicrosoft.com,Miriam Graham,United Kingdom,Birmingham,England,SharePoint Online,Windows,Browser,Edge 124.0,81.128.72.55,True
+2026-06-05T11:00:00Z,miriamG@<enter_your_domain_here>.onmicrosoft.com,Miriam Graham,United Kingdom,Birmingham,England,Microsoft Teams,Windows,Browser,Edge 124.0,81.128.72.55,True
+2026-05-30T09:45:00Z,nestorW@<enter_your_domain_here>.onmicrosoft.com,Nestor Wilke,United Kingdom,Edinburgh,Scotland,Microsoft Teams,Windows,Browser,Chrome 124.0,109.145.62.30,True
+2026-06-01T14:00:00Z,nestorW@<enter_your_domain_here>.onmicrosoft.com,Nestor Wilke,United Kingdom,Edinburgh,Scotland,Exchange Online,Windows,Mobile Apps and Desktop clients,,109.145.62.30,False
+2026-06-04T09:15:00Z,nestorW@<enter_your_domain_here>.onmicrosoft.com,Nestor Wilke,United Kingdom,Edinburgh,Scotland,SharePoint Online,Windows,Browser,Chrome 124.0,109.145.62.30,True
+2026-06-05T10:30:00Z,nestorW@<enter_your_domain_here>.onmicrosoft.com,Nestor Wilke,United Kingdom,Edinburgh,Scotland,Microsoft Teams,Windows,Browser,Chrome 124.0,109.145.62.30,True
+2026-05-30T08:00:00Z,LynneR@<enter_your_domain_here>.onmicrosoft.com,Lynne Robbins,United Kingdom,Leeds,England,Azure Portal,Windows,Browser,Edge 124.0,77.99.45.120,True
+2026-06-01T09:00:00Z,LynneR@<enter_your_domain_here>.onmicrosoft.com,Lynne Robbins,United Kingdom,Leeds,England,Azure Portal,Windows,Browser,Edge 124.0,77.99.45.120,True
+2026-06-03T08:30:00Z,LynneR@<enter_your_domain_here>.onmicrosoft.com,Lynne Robbins,United Kingdom,Leeds,England,Microsoft Teams,MacOS,Browser,Chrome 124.0,77.99.45.120,True
+2026-06-05T08:15:00Z,LynneR@<enter_your_domain_here>.onmicrosoft.com,Lynne Robbins,United Kingdom,Leeds,England,Azure Portal,Windows,Browser,Edge 124.0,77.99.45.120,True
+2026-05-30T09:00:00Z,adeleV@<enter_your_domain_here>.onmicrosoft.com,Adele Vance,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Chrome 124.0,82.24.15.110,True
+2026-05-31T08:45:00Z,adeleV@<enter_your_domain_here>.onmicrosoft.com,Adele Vance,United Kingdom,London,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,82.24.15.110,False
+2026-06-02T11:30:00Z,adeleV@<enter_your_domain_here>.onmicrosoft.com,Adele Vance,Spain,Barcelona,Catalonia,Microsoft Teams,iOS,Mobile Apps and Desktop clients,,83.62.174.45,True
+2026-06-03T10:15:00Z,adeleV@<enter_your_domain_here>.onmicrosoft.com,Adele Vance,Spain,Barcelona,Catalonia,Exchange Online,iOS,Mobile Apps and Desktop clients,,83.62.174.45,False
+2026-06-04T09:45:00Z,adeleV@<enter_your_domain_here>.onmicrosoft.com,Adele Vance,Spain,Malaga,Andalusia,Microsoft Teams,iOS,Mobile Apps and Desktop clients,,83.62.174.55,True
+2026-06-05T14:00:00Z,adeleV@<enter_your_domain_here>.onmicrosoft.com,Adele Vance,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Chrome 124.0,82.24.15.110,True
+2026-05-30T08:30:00Z,alexW@<enter_your_domain_here>.onmicrosoft.com,Alex Wilber,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Edge 124.0,82.44.101.72,True
+2026-06-01T07:15:00Z,alexW@<enter_your_domain_here>.onmicrosoft.com,Alex Wilber,Germany,Berlin,Berlin,Microsoft Teams,Windows,Browser,Edge 124.0,217.231.44.200,True
+2026-06-01T09:00:00Z,alexW@<enter_your_domain_here>.onmicrosoft.com,Alex Wilber,Germany,Berlin,Berlin,Exchange Online,Windows,Mobile Apps and Desktop clients,,217.231.44.200,False
+2026-06-02T08:30:00Z,alexW@<enter_your_domain_here>.onmicrosoft.com,Alex Wilber,Germany,Berlin,Berlin,Microsoft Teams,Windows,Browser,Edge 124.0,217.231.44.200,True
+2026-06-02T14:00:00Z,alexW@<enter_your_domain_here>.onmicrosoft.com,Alex Wilber,Germany,Munich,Bavaria,SharePoint Online,Windows,Browser,Edge 124.0,217.231.44.210,True
+2026-06-03T16:00:00Z,alexW@<enter_your_domain_here>.onmicrosoft.com,Alex Wilber,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Edge 124.0,82.44.101.72,True
+2026-06-05T09:00:00Z,alexW@<enter_your_domain_here>.onmicrosoft.com,Alex Wilber,United Kingdom,London,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,82.44.101.72,False
+2026-05-30T09:30:00Z,diegoS@<enter_your_domain_here>.onmicrosoft.com,Diego Siciliani,United Kingdom,Bristol,England,Microsoft Teams,Windows,Browser,Chrome 124.0,86.9.55.11,True
+2026-05-31T10:00:00Z,diegoS@<enter_your_domain_here>.onmicrosoft.com,Diego Siciliani,France,Paris,Île-de-France,Microsoft Teams,Windows,Browser,Chrome 124.0,90.63.14.200,True
+2026-05-31T14:30:00Z,diegoS@<enter_your_domain_here>.onmicrosoft.com,Diego Siciliani,France,Paris,Île-de-France,Exchange Online,Windows,Mobile Apps and Desktop clients,,90.63.14.200,False
+2026-06-01T09:00:00Z,diegoS@<enter_your_domain_here>.onmicrosoft.com,Diego Siciliani,Netherlands,Amsterdam,North Holland,Microsoft Teams,Windows,Browser,Chrome 124.0,213.84.10.50,True
+2026-06-01T16:00:00Z,diegoS@<enter_your_domain_here>.onmicrosoft.com,Diego Siciliani,Netherlands,Amsterdam,North Holland,SharePoint Online,Windows,Browser,Chrome 124.0,213.84.10.50,True
+2026-06-03T09:15:00Z,diegoS@<enter_your_domain_here>.onmicrosoft.com,Diego Siciliani,United Kingdom,Bristol,England,Microsoft Teams,Windows,Browser,Chrome 124.0,86.9.55.11,True
+2026-06-05T08:45:00Z,diegoS@<enter_your_domain_here>.onmicrosoft.com,Diego Siciliani,United Kingdom,Bristol,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,86.9.55.11,False
+2026-05-30T09:00:00Z,gradyA@<enter_your_domain_here>.onmicrosoft.com,Grady Archie,United Kingdom,Leeds,England,Microsoft Teams,Windows,Browser,Chrome 124.0,77.100.22.88,True
+2026-06-01T08:30:00Z,gradyA@<enter_your_domain_here>.onmicrosoft.com,Grady Archie,United Kingdom,Leeds,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,77.100.22.88,False
+2026-06-02T08:30:00Z,gradyA@<enter_your_domain_here>.onmicrosoft.com,Grady Archie,United Kingdom,Leeds,England,Microsoft Teams,Windows,Browser,Chrome 124.0,77.100.22.88,True
+2026-06-02T10:15:00Z,gradyA@<enter_your_domain_here>.onmicrosoft.com,Grady Archie,United States,New York,New York,Exchange Online,Windows,Mobile Apps and Desktop clients,,104.244.90.15,False
+2026-06-03T09:30:00Z,gradyA@<enter_your_domain_here>.onmicrosoft.com,Grady Archie,United Kingdom,Leeds,England,Microsoft Teams,Windows,Browser,Chrome 124.0,77.100.22.88,True
+2026-06-05T10:00:00Z,gradyA@<enter_your_domain_here>.onmicrosoft.com,Grady Archie,United Kingdom,Leeds,England,SharePoint Online,Windows,Browser,Chrome 124.0,77.100.22.88,True
+2026-05-30T08:45:00Z,isaiahL@<enter_your_domain_here>.onmicrosoft.com,Isaiah Langer,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Edge 124.0,86.14.77.200,True
+2026-06-01T10:00:00Z,isaiahL@<enter_your_domain_here>.onmicrosoft.com,Isaiah Langer,United Kingdom,London,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,86.14.77.200,False
+2026-06-03T00:30:00Z,isaiahL@<enter_your_domain_here>.onmicrosoft.com,Isaiah Langer,Australia,Sydney,New South Wales,Microsoft Teams,iOS,Mobile Apps and Desktop clients,,203.24.101.55,True
+2026-06-04T02:15:00Z,isaiahL@<enter_your_domain_here>.onmicrosoft.com,Isaiah Langer,Australia,Sydney,New South Wales,Exchange Online,iOS,Mobile Apps and Desktop clients,,203.24.101.55,False
+2026-06-04T08:00:00Z,isaiahL@<enter_your_domain_here>.onmicrosoft.com,Isaiah Langer,Australia,Melbourne,Victoria,Microsoft Teams,iOS,Mobile Apps and Desktop clients,,203.24.101.70,True
+2026-05-30T09:15:00Z,johannaL@<enter_your_domain_here>.onmicrosoft.com,Johanna Lorenz,United Kingdom,Cambridge,England,Microsoft Teams,MacOS,Browser,Safari 17.0,82.36.55.90,True
+2026-06-01T08:45:00Z,johannaL@<enter_your_domain_here>.onmicrosoft.com,Johanna Lorenz,United Kingdom,Cambridge,England,Exchange Online,MacOS,Mobile Apps and Desktop clients,,82.36.55.90,False
+2026-06-03T08:00:00Z,johannaL@<enter_your_domain_here>.onmicrosoft.com,Johanna Lorenz,United Kingdom,Cambridge,England,Microsoft Teams,MacOS,Browser,Safari 17.0,82.36.55.90,True
+2026-06-04T09:30:00Z,johannaL@<enter_your_domain_here>.onmicrosoft.com,Johanna Lorenz,Switzerland,Zurich,,Microsoft Teams,MacOS,Browser,Safari 17.0,194.209.130.44,True
+2026-06-04T15:00:00Z,johannaL@<enter_your_domain_here>.onmicrosoft.com,Johanna Lorenz,Switzerland,Zurich,,Exchange Online,MacOS,Mobile Apps and Desktop clients,,194.209.130.44,False
+2026-06-05T09:00:00Z,johannaL@<enter_your_domain_here>.onmicrosoft.com,Johanna Lorenz,United Kingdom,Cambridge,England,Microsoft Teams,MacOS,Browser,Safari 17.0,82.36.55.90,True
+2026-05-31T09:30:00Z,joniS@<enter_your_domain_here>.onmicrosoft.com,Joni Sherman,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Chrome 124.0,82.30.100.45,True
+2026-06-02T10:00:00Z,joniS@<enter_your_domain_here>.onmicrosoft.com,Joni Sherman,United Kingdom,London,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,82.30.100.45,False
+2026-06-04T14:30:00Z,joniS@<enter_your_domain_here>.onmicrosoft.com,Joni Sherman,United Kingdom,London,England,SharePoint Online,iOS,Mobile Apps and Desktop clients,,82.30.100.45,True
+2026-06-05T08:30:00Z,joniS@<enter_your_domain_here>.onmicrosoft.com,Joni Sherman,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Chrome 124.0,82.30.100.45,True
+2026-05-30T10:30:00Z,leeG@<enter_your_domain_here>.onmicrosoft.com,Lee Gu,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Edge 124.0,86.9.155.20,True
+2026-06-01T09:00:00Z,leeG@<enter_your_domain_here>.onmicrosoft.com,Lee Gu,United Kingdom,London,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,86.9.155.20,False
+2026-06-03T11:15:00Z,leeG@<enter_your_domain_here>.onmicrosoft.com,Lee Gu,United Kingdom,London,England,SharePoint Online,Windows,Browser,Edge 124.0,86.9.155.20,True
+2026-06-05T09:45:00Z,leeG@<enter_your_domain_here>.onmicrosoft.com,Lee Gu,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Edge 124.0,86.9.155.20,True
+2026-05-31T08:15:00Z,lidiaH@<enter_your_domain_here>.onmicrosoft.com,Lidia Holloway,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Chrome 124.0,82.18.44.66,True
+2026-06-02T09:30:00Z,lidiaH@<enter_your_domain_here>.onmicrosoft.com,Lidia Holloway,United Kingdom,London,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,82.18.44.66,False
+2026-06-04T13:00:00Z,lidiaH@<enter_your_domain_here>.onmicrosoft.com,Lidia Holloway,United Kingdom,London,England,Microsoft Teams,MacOS,Browser,Safari 17.0,82.18.44.66,True
+2026-06-05T10:15:00Z,lidiaH@<enter_your_domain_here>.onmicrosoft.com,Lidia Holloway,United Kingdom,London,England,SharePoint Online,Windows,Browser,Chrome 124.0,82.18.44.66,True
+2026-05-30T09:20:00Z,lynneR@<enter_your_domain_here>.onmicrosoft.com,Lynne Robbins,United Kingdom,Manchester,England,Microsoft Teams,Android,Mobile Apps and Desktop clients,,86.7.100.55,True
+2026-06-01T08:30:00Z,lynneR@<enter_your_domain_here>.onmicrosoft.com,Lynne Robbins,United Kingdom,Manchester,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,86.7.100.55,False
+2026-06-03T14:00:00Z,lynneR@<enter_your_domain_here>.onmicrosoft.com,Lynne Robbins,United Kingdom,Manchester,England,Microsoft Teams,Windows,Browser,Chrome 124.0,86.7.100.55,True
+2026-06-05T09:30:00Z,lynneR@<enter_your_domain_here>.onmicrosoft.com,Lynne Robbins,United Kingdom,Manchester,England,SharePoint Online,Windows,Browser,Chrome 124.0,86.7.100.55,True
+2026-05-30T10:00:00Z,henriettaM@<enter_your_domain_here>.onmicrosoft.com,Henrietta Mueller,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Edge 124.0,82.44.200.11,True
+2026-06-02T09:00:00Z,henriettaM@<enter_your_domain_here>.onmicrosoft.com,Henrietta Mueller,United Kingdom,London,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,82.44.200.11,False
+2026-06-04T11:30:00Z,henriettaM@<enter_your_domain_here>.onmicrosoft.com,Henrietta Mueller,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Edge 124.0,82.44.200.11,True
+2026-06-05T08:45:00Z,henriettaM@<enter_your_domain_here>.onmicrosoft.com,Henrietta Mueller,United Kingdom,London,England,SharePoint Online,Windows,Browser,Edge 124.0,82.44.200.11,True
+2026-05-31T09:00:00Z,pradeepG@<enter_your_domain_here>.onmicrosoft.com,Pradeep Gupta,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Chrome 124.0,86.14.200.90,True
+2026-06-02T10:30:00Z,pradeepG@<enter_your_domain_here>.onmicrosoft.com,Pradeep Gupta,United Kingdom,London,England,Exchange Online,Windows,Mobile Apps and Desktop clients,,86.14.200.90,False
+2026-06-04T09:00:00Z,pradeepG@<enter_your_domain_here>.onmicrosoft.com,Pradeep Gupta,United Kingdom,London,England,Microsoft Teams,Windows,Browser,Chrome 124.0,86.14.200.90,True
+2026-06-05T11:00:00Z,pradeepG@<enter_your_domain_here>.onmicrosoft.com,Pradeep Gupta,United Kingdom,London,England,SharePoint Online,Windows,Browser,Chrome 124.0,86.14.200.90,True
